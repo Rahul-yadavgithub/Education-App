@@ -57,6 +57,12 @@ const Login = () => {
             className="p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             required
           />
+
+          {/* Forgot Password Link */}
+          <p className="text-right text-blue-500 hover:underline text-sm">
+            <Link to="/forgot-password">Forgot Password?</Link>
+          </p>
+
           <button
             type="submit"
             disabled={loading}
@@ -68,7 +74,7 @@ const Login = () => {
         </form>
 
         <p className="text-center mt-4 text-gray-600">
-          Don’t have an account?{" "}
+          Don't have an account?{" "}
           <Link to="/signup" className="text-blue-500 hover:underline">
             Sign up
           </Link>
