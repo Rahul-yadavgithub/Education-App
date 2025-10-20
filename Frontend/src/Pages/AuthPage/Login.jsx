@@ -21,12 +21,10 @@ const Login = () => {
       if (res?.data?.accessToken) {
         // Save token in localStorage if needed (optional)
         localStorage.setItem("token", res.data.accessToken);
-
-        // Redirect to home/dashboard
         navigate("/home");
       } else {
         setError(res?.data?.message || "Invalid credentials");
-        setTimeout(() => setError(""), 5000); // auto-clear after 5s
+        setTimeout(() => setError(""), 5000);
       }
     } catch (err) {
       const serverMessage = err.response?.data?.message;
@@ -42,6 +40,7 @@ const Login = () => {
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
       <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
         <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">Login</h2>
+
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <input
             type="email"
@@ -59,6 +58,17 @@ const Login = () => {
             className="p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             required
           />
+
+          {/* ✅ Forgot Password Link */}
+          <div className="flex justify-end">
+            <Link
+              to="/forgot-password"
+              className="text-sm text-blue-500 hover:underline"
+            >
+              Forgot Password?
+            </Link>
+          </div>
+
           <button
             type="submit"
             disabled={loading}
@@ -70,6 +80,7 @@ const Login = () => {
           >
             {loading ? "Logging in..." : "Login"}
           </button>
+
           {error && <p className="text-red-500 text-center mt-2">{error}</p>}
         </form>
 

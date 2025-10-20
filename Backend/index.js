@@ -8,6 +8,8 @@ import connectDB from "./configuration/db.js";
 import authRoute from "./routers/authRouter.js";
 import dashRouter from "./routers/dashboardRouter.js";
 
+import loginTypeRouter from './routers/loginTypeRouter.js';
+
 dotenv.config();
 
 const app = express();
@@ -29,6 +31,8 @@ app.use(express.urlencoded({ extended: true }));
 // Routes
 app.use("/api/auth", authRoute);
 app.use("/api/home", dashRouter);
+
+app.use("/api/login-type",  loginTypeRouter);
 
 app.get("/", (req, res) => {
   res.send("Backend API is running...");
