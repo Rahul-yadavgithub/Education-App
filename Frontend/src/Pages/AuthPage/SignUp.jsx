@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
+import axiosInstance from "../../Utils/axiosInstance";
+import { API_PATHS } from "../../Utils/apiPaths";
 
 const Signup = () => {
   const [name, setName] = useState("");
@@ -17,32 +19,34 @@ const Signup = () => {
 
     if (password !== confirmPassword) {
       setError("Passwords do not match");
+      setTimeout(() => setError(""), 5000); // auto-clear
       return;
     }
 
     setLoading(true);
-
     try {
-      const response = await fetch("http://localhost:8000/api/auth/signup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password }),
+      const res = await axiosInstance.post(API_PATHS.AUTH.REGISTER, {
+        name,
+        email,
+        password,
       });
 
-      const data = await response.json();
-
-      if (response.ok) {
-        // ✅ Instead of navigating to login, show verification message
-        setMessage("Signup successful! Please check your email to verify your account.");
+      if (res?.data?.message) {
+        setMessage(
+          "Signup successful! Please check your email to verify your account."
+        );
       } else {
-        setError(data.message || "Signup failed");
+        setError("Signup failed");
+        setTimeout(() => setError(""), 5000);
       }
     } catch (err) {
-      console.error(err);
-      setError("Something went wrong");
+      const serverMessage = err.response?.data?.message;
+      setError(serverMessage || "Something went wrong. Please try again.");
+      setTimeout(() => setError(""), 5000);
+      console.error("Signup error:", err);
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   return (
@@ -92,7 +96,11 @@ const Signup = () => {
             <button
               type="submit"
               disabled={loading}
-              className="bg-green-500 text-white py-3 rounded-md font-semibold hover:bg-green-600 transition"
+              className={`py-3 rounded-md font-semibold transition ${
+                loading
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-green-500 hover:bg-green-600 text-white"
+              }`}
             >
               {loading ? "Creating Account..." : "Sign Up"}
             </button>

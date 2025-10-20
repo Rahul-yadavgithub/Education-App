@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import axiosInstance from "../../Utils/axiosInstance"; // your centralized axios
+import { API_PATHS } from "../../Utils/apiPaths";
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState("");
@@ -13,27 +15,29 @@ const ForgotPassword = () => {
     setError("");
 
     try {
-      const res = await fetch("http://localhost:8000/api/auth/forgot-password", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
+      const res = await axiosInstance.post(API_PATHS.AUTH.FORGOTPASSWORD, { email });
 
-      const data = await res.json();
-      if (res.ok) setMessage(data.message);
-      else setError(data.message || "Something went wrong");
+      if (res?.data?.message) {
+        setMessage(res.data.message);
+        setTimeout(() => setMessage(""), 5000); // auto-clear after 5s
+      }
     } catch (err) {
-      setError("Something went wrong");
-      console.error(err);
+      // Handle server errors
+      const serverMessage = err.response?.data?.message;
+      setError(serverMessage || "Something went wrong. Please try again.");
+      setTimeout(() => setError(""), 5000); // auto-clear after 5s
+      console.error("Forgot password error:", err);
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
       <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
-        <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">Forgot Password</h2>
+        <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">
+          Forgot Password
+        </h2>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <input
             type="email"
@@ -46,7 +50,11 @@ const ForgotPassword = () => {
           <button
             type="submit"
             disabled={loading}
-            className="bg-blue-500 text-white py-3 rounded-md font-semibold hover:bg-blue-600 transition"
+            className={`py-3 rounded-md font-semibold transition ${
+              loading
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-blue-500 hover:bg-blue-600 text-white"
+            }`}
           >
             {loading ? "Sending..." : "Send Reset Link"}
           </button>

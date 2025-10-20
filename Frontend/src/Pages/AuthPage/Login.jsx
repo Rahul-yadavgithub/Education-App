@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import axiosInstance from "../../Utils/axiosInstance";
+import { API_PATHS } from "../../Utils/apiPaths";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -14,26 +16,26 @@ const Login = () => {
     setError("");
 
     try {
-      const response = await fetch("http://localhost:8000/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
+      const res = await axiosInstance.post(API_PATHS.AUTH.LOGIN, { email, password });
 
-      const data = await response.json();
+      if (res?.data?.accessToken) {
+        // Save token in localStorage if needed (optional)
+        localStorage.setItem("token", res.data.accessToken);
 
-      if (response.ok) {
-        localStorage.setItem("token", data.token);
+        // Redirect to home/dashboard
         navigate("/home");
       } else {
-        setError(data.message || "Invalid credentials");
+        setError(res?.data?.message || "Invalid credentials");
+        setTimeout(() => setError(""), 5000); // auto-clear after 5s
       }
     } catch (err) {
-      setError("Something went wrong");
-      console.error(err);
+      const serverMessage = err.response?.data?.message;
+      setError(serverMessage || "Something went wrong. Please try again.");
+      setTimeout(() => setError(""), 5000);
+      console.error("Login error:", err);
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   return (
@@ -57,16 +59,14 @@ const Login = () => {
             className="p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             required
           />
-
-          {/* Forgot Password Link */}
-          <p className="text-right text-blue-500 hover:underline text-sm">
-            <Link to="/forgot-password">Forgot Password?</Link>
-          </p>
-
           <button
             type="submit"
             disabled={loading}
-            className="bg-blue-500 text-white py-3 rounded-md font-semibold hover:bg-blue-600 transition"
+            className={`py-3 rounded-md font-semibold transition ${
+              loading
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-blue-500 hover:bg-blue-600 text-white"
+            }`}
           >
             {loading ? "Logging in..." : "Login"}
           </button>
