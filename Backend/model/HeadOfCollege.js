@@ -7,6 +7,6 @@ const HeadOfCollegeSchema = new mongoose.Schema({
   designation: { type: String, default: "Head of College" },
 }, { timestamps: true });
 
-const HeadOfCollegeModel = mongoose.model("HeadOfCollege", HeadOfCollegeSchema);
+const HeadOfCollegeModel = UserModel.discriminator("Principle", HeadOfCollegeSchema);
 
 export default HeadOfCollegeModel;  // ✅ default export

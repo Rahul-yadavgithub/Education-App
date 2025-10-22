@@ -18,6 +18,8 @@ export const signUp = async (req, res) => {
   try {
     const Model = getUserModel(userType);
 
+    console.log("This is Model: ", Model);
+
     const userExists = await Model.findOne({ email });
     if (userExists) {
       return res.status(400).json({ message: "User already exists" });
@@ -158,19 +160,15 @@ export const logout = (req, res) => {
 export const verifyEmail = async (req, res) => {
   const { token } = req.params;
 
-  console.log("This is Token", token);
-
   try {
     // Check across all user models
-    const models = [getUserModel("Student"), getUserModel("Teacher"), getUserModel("HeadOfCollege"), getUserModel("HeadOfDistrict")];
+    const models = [getUserModel("Student"), getUserModel("Teacher"), getUserModel("Principle"), getUserModel("District")];
     let user = null;
 
     for (const Model of models) {
       user = await Model.findOne({ verificationToken: token });
       if (user) break;
     }
-
-    console.log("This is User: ", user);
 
     if (!user) return res.status(400).json({ message: "Invalid or expired token" });
 

@@ -17,13 +17,13 @@ const roles = [
     gradient: "from-green-500 to-emerald-500",
   },
   {
-    name: "Principal",
+    name: "Principle ",
     icon: <School className="w-10 h-10 text-purple-500" />,
-    path: "/principal/login",
+    path: "/principle/login",
     gradient: "from-purple-500 to-pink-500",
   },
   {
-    name: "Head of District",
+    name: "District",
     icon: <Building2 className="w-10 h-10 text-orange-500" />,
     path: "/district/login",
     gradient: "from-orange-500 to-yellow-500",

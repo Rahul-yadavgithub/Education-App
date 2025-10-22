@@ -7,8 +7,8 @@ const loginTypeRouter = express.Router();
 const roles = [
   { name: "Student", path: "/student/login" },
   { name: "Teacher", path: "/teacher/login" },
-  { name: "Principal", path: "/principal/login" },
-  { name: "District Head", path: "/district-head/login" },
+  { name: "Principle", path: "/principle/login" },
+  { name: "District", path: "/district/login" },
 ];
 
 loginTypeRouter.get("/", (req, res) => {

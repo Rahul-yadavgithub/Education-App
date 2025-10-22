@@ -1,47 +1,35 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import axiosInstance from "../../Utils/axiosInstance.js";
 import InputField from "../Inputs/InputField.jsx";
 import ProfilePhotoSelector from "../Inputs/ProfilePhotoSelector.jsx";
-import  uploadImage  from "../../Utils/uploadImage.js";
+import uploadImage from "../../Utils/uploadImage.js";
 import { useUser } from "../../Context/UserContext.jsx";
 
-const HeadOfCollegeForm = ({ apiPath, domain, title, redirectTo }) => {
+const HeadOfDistrictForm = ({ apiPath, domain, title, redirectTo }) => {
   const { updateUser } = useUser();
   const [profilePic, setProfilePic] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
+  const navigate = useNavigate();
+
+  // ---------- Form state ----------
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     password: "",
     confirmPassword: "",
-    collegeName: "",
-    otherCollege: "",
-    designation: "Head of College",
-    userType: domain,
+    districtName: "",
+    officeId: "",
+    designation: "Head of District",
   });
 
-  const [colleges, setColleges] = useState([]);
-  const [error, setError] = useState("");
-  const [message, setMessage] = useState("");
-  const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
-
-  // Fetch college list
-  useEffect(() => {
-    const fetchColleges = async () => {
-      try {
-        const res = await axiosInstance.get("/api/college/list");
-        setColleges(res.data.colleges || []);
-      } catch (err) {
-        console.error("Error fetching college list:", err);
-      }
-    };
-    fetchColleges();
-  }, []);
-
+  // ---------- Handle Input ----------
   const handleChange = (e) =>
     setFormData({ ...formData, [e.target.name]: e.target.value });
 
+  // ---------- Handle Submit ----------
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -51,24 +39,35 @@ const HeadOfCollegeForm = ({ apiPath, domain, title, redirectTo }) => {
       setError("Passwords do not match");
       return;
     }
+    if (!formData.districtName.trim()) {
+      setError("District Name is required");
+      return;
+    }
+    if (!formData.officeId.trim()) {
+      setError("Office ID is required");
+      return;
+    }
 
     setLoading(true);
     try {
+      // Upload profile image if selected
       let profileImageUrl = "";
       if (profilePic) {
-        const uploadRes = await uploadImage(profilePic);
+        const uploadRes = await uploadImage(profilePic, domain);
         profileImageUrl = uploadRes?.imageUrl || "";
       }
 
-      const payload = { ...formData, profileImageUrl };
-      delete payload.confirmPassword;
-
-      if (payload.collegeName === "Other") {
-        payload.collegeName = payload.otherCollege;
-        delete payload.otherCollege;
-      }
-
-      payload.userType = domain;
+      // Prepare payload
+      const payload = {
+        name: formData.name,
+        email: formData.email,
+        password: formData.password,
+        districtName: formData.districtName,
+        officeId: formData.officeId,
+        designation: formData.designation,
+        profileImageUrl,
+        userType: domain,
+      };
 
       const res = await axiosInstance.post(apiPath, payload);
 
@@ -77,7 +76,7 @@ const HeadOfCollegeForm = ({ apiPath, domain, title, redirectTo }) => {
       }
 
       setMessage(res?.data?.message || "Signup successful!");
-      setTimeout(() => navigate(redirectTo || `/${domain}/home`), 1500);
+      setTimeout(() => navigate(redirectTo || `/${domain.toLowerCase()}/login`), 1500);
     } catch (err) {
       setError(err.response?.data?.message || "Something went wrong");
     } finally {
@@ -85,6 +84,7 @@ const HeadOfCollegeForm = ({ apiPath, domain, title, redirectTo }) => {
     }
   };
 
+  // ---------- JSX ----------
   return (
     <div className="w-full max-w-md mx-auto p-8 bg-white/70 backdrop-blur-md rounded-2xl shadow-lg">
       {title && (
@@ -94,7 +94,7 @@ const HeadOfCollegeForm = ({ apiPath, domain, title, redirectTo }) => {
       )}
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-        {/* Profile photo picker */}
+        {/* Profile photo */}
         <ProfilePhotoSelector image={profilePic} setImage={setProfilePic} />
 
         <InputField
@@ -128,37 +128,19 @@ const HeadOfCollegeForm = ({ apiPath, domain, title, redirectTo }) => {
           onChange={handleChange}
         />
 
-        {/* College Dropdown */}
-        <div className="flex flex-col gap-1">
-          <label htmlFor="collegeName" className="text-gray-700 font-medium">
-            College Name
-          </label>
-          <select
-            id="collegeName"
-            name="collegeName"
-            required
-            value={formData.collegeName}
-            onChange={handleChange}
-            className="p-3 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
-          >
-            <option value="">Select College</option>
-            {colleges.map((college, idx) => (
-              <option key={idx} value={college}>
-                {college}
-              </option>
-            ))}
-            <option value="Other">Other</option>
-          </select>
-        </div>
+        <InputField
+          label="District Name"
+          name="districtName"
+          value={formData.districtName}
+          onChange={handleChange}
+        />
 
-        {formData.collegeName === "Other" && (
-          <InputField
-            label="Other College Name"
-            name="otherCollege"
-            value={formData.otherCollege}
-            onChange={handleChange}
-          />
-        )}
+        <InputField
+          label="Office ID"
+          name="officeId"
+          value={formData.officeId}
+          onChange={handleChange}
+        />
 
         <InputField
           label="Designation"
@@ -193,4 +175,4 @@ const HeadOfCollegeForm = ({ apiPath, domain, title, redirectTo }) => {
   );
 };
 
-export default HeadOfCollegeForm;
+export default HeadOfDistrictForm;

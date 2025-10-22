@@ -51,10 +51,9 @@ const TeacherForm = ({
     try {
       let profileImageUrl = "";
       if (profilePic) {
-        const uploadRes = await uploadImage(profilePic);
+        const uploadRes = await uploadImage(profilePic,domain);
         profileImageUrl = uploadRes?.imageUrl || "";
       }
-
       const payload = { ...formData, profileImageUrl };
       delete payload.confirmPassword;
 

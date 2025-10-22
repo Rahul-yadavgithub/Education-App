@@ -9,9 +9,9 @@ export const getUserModel = (userType) => {
       return StudentModel;
     case "Teacher":
       return TeacherModel;
-    case "HeadOfCollege":
+    case "Principle":
       return HeadOfCollegeModel;
-    case "HeadOfDistrict":
+    case "District":
       return HeadOfDistrictModel;
     default:
       throw new Error("Invalid userType");

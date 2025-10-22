@@ -18,11 +18,10 @@ const SignUpForm = ({ domain, title, redirectTo }) => {
         return API_PATHS.AUTH.REGISTER("student");
       case "teacher":
         return API_PATHS.AUTH.REGISTER("teacher");
-      case "principal":
-        return API_PATHS.AUTH.REGISTER("principal");
+      case "principle":
+        return API_PATHS.AUTH.REGISTER("principle");
       case "district":
-      case "headofdistrict":
-        return API_PATHS.AUTH.REGISTER("headofdistrict");
+        return API_PATHS.AUTH.REGISTER("district");
       default:
         return null;
     }
@@ -39,10 +38,9 @@ const SignUpForm = ({ domain, title, redirectTo }) => {
         return <StudentForm {...props} />;
       case "teacher":
         return <TeacherForm {...props} />;
-      case "principal":
+      case "principle":
         return <PrincipalForm {...props} />;
       case "district":
-      case "headofdistrict":
         return <HeadOfDistrictForm {...props} />;
       default:
         return <p className="text-red-500">Invalid domain type</p>;

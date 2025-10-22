@@ -1,22 +1,22 @@
 import React from "react";
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate, useParams } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 
 // ---------- Context ----------
 import UserProvider, { UserDataContext } from "./Context/UserContext.jsx";
 import ProtectedRoute from "./Components/ProtectRouter/ProtectedRoute.jsx";
 
+// ---------- Generic Role Pages ----------
+import LoginPage from "./Pages/Auth/LoginPage.jsx";
+import SignUpPage from "./Pages/Auth/SignUpPage.jsx";
+import ForgotPasswordPage from "./Pages/Auth/ForgotPassword.jsx";
+import ResetPasswordPage from "./Pages/Auth/ResetPassword.jsx";
+import VerifyEmailPage from "./Pages/Auth/VerifyEmailPage.jsx";
+
 // ---------- Role Selection ----------
 import RoleSelectionLayout from "./Components/LayOuts/RoleSelectionLayout.jsx";
 
-// ---------- Student Auth Pages ----------
-import StudentLogin from "./Pages/Domain/Student/Login.jsx";
-import StudentSignup from "./Pages/Domain/Student/SignUp.jsx";
-import StudentForgotPassword from "./Pages/Domain/Student/ForgotPassword.jsx";
-import StudentResetPassword from "./Pages/Domain/Student/ResetPassword.jsx";
-import StudentVerifyEmail from "./Pages/Domain/Student/VerifyEmail.jsx";
-
-// ---------- Student Dashboard ----------
+// ---------- Dashboard ----------
 import Dashboard from "./Pages/HomePage/DashBoard.jsx";
 
 const App = () => {
@@ -24,30 +24,20 @@ const App = () => {
     <UserProvider>
       <Router>
         <Routes>
-          {/* Root route: redirect based on user context */}
+          {/* Root route */}
           <Route path="/" element={<Root />} />
 
           {/* Public routes */}
-          <Route path="/student/login" element={<StudentLogin />} />
-          <Route path="/student/signup" element={<StudentSignup />} />
-          <Route path="/student/forgot-password" element={<StudentForgotPassword />} />
-          <Route
-            path="/student/reset-password/:token"
-            element={<StudentResetPassword domain="Student" />}
-          />
-          <Route path="/student/verify/:token" element={<StudentVerifyEmail />} />
+          <Route path="/:role/login" element={<LoginPage />} />
+          <Route path="/:role/signup" element={<SignUpPage />} />
+          <Route path="/:role/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/:role/reset-password/:token" element={<ResetPasswordPage />} />
+          <Route path="/:role/verify/:token" element={<VerifyEmailPage />} />
 
-          {/* Protected student dashboard */}
-          <Route
-            path="/student/home"
-            element={
-              <ProtectedRoute role="Student">
-                <Dashboard />
-              </ProtectedRoute>
-            }
-          />
+          {/* Protected dashboard */}
+          <Route path="/:role/home" element={<ProtectedDashboard />} />
 
-          {/* Default role selection */}
+          {/* Role selection */}
           <Route path="/role-selection" element={<RoleSelectionLayout />} />
 
           {/* Catch-all */}
@@ -55,12 +45,7 @@ const App = () => {
         </Routes>
       </Router>
 
-      <Toaster
-        toastOptions={{
-          className: "",
-          style: { fontSize: "13px" },
-        }}
-      />
+      <Toaster toastOptions={{ className: "", style: { fontSize: "13px" } }} />
     </UserProvider>
   );
 };
@@ -71,23 +56,26 @@ export default App;
 const Root = () => {
   const { user } = React.useContext(UserDataContext);
 
-  if (!user) {
-    // No user → show role selection page
-    return <Navigate to="/role-selection" replace />;
-  }
+  if (!user) return <Navigate to="/role-selection" replace />;
 
-  // Logged-in users → redirect to their dashboard
-  switch (user.role) {
-    case "student":
-      return <Navigate to="/student/home" replace />;
-    case "teacher":
-      return <Navigate to="/teacher/home" replace />;
-    case "principal":
-      return <Navigate to="/principal/home" replace />;
-    case "district":
-      return <Navigate to="/district-head/home" replace />;
-    default:
-      return <Navigate to="/role-selection" replace />;
-  }
+  const role = user.role.toLowerCase();
+  return <Navigate to={`/${role}/home`} replace />;
 };
 
+// ---------- Protected dashboard wrapper ----------
+const ProtectedDashboard = () => {
+  const { user } = React.useContext(UserDataContext);
+  const { role } = useParams(); // ✅ get role from URL
+
+  if (!user) return <Navigate to="/role-selection" replace />;
+
+  if (user.role.toLowerCase() !== role.toLowerCase()) {
+    return <Navigate to={`/${user.role.toLowerCase()}/home`} replace />;
+  }
+
+  return (
+    <ProtectedRoute role={user.role}>
+      <Dashboard />
+    </ProtectedRoute>
+  );
+};

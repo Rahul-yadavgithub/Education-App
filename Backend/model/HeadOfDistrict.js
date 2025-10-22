@@ -19,6 +19,6 @@ const HeadOfDistrictSchema = new mongoose.Schema({
   },
 }, { timestamps: true });
 
-const HeadOfDistrictModel = UserModel.discriminator("HeadOfDistrict", HeadOfDistrictSchema);
+const HeadOfDistrictModel = UserModel.discriminator("District", HeadOfDistrictSchema);
 
 export default HeadOfDistrictModel;
