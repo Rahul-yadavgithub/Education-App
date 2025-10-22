@@ -1,7 +1,7 @@
 import React, { useRef, useState, useEffect } from "react";
-import { LuUser, LuUpload, LuTrash } from "react-icons/lu";
+import { LuUser, LuUpload } from "react-icons/lu";
 
-const ProfilePhotoSelector = ({ image, setImage }) => {
+const ProfilePhotoSelector = ({ image, setImage, uploading = false }) => {
   const inputRef = useRef(null);
   const [previewUrl, setPreviewUrl] = useState(null);
   const [hovered, setHovered] = useState(false);
@@ -24,12 +24,10 @@ const ProfilePhotoSelector = ({ image, setImage }) => {
     if (file) setImage(file);
   };
 
-  const handleRemoveImage = () => setImage(null);
-
   const onChooseFile = () => inputRef.current.click();
 
   return (
-    <div className="flex justify-center mb-6">
+    <div className="relative w-24 h-24">
       <input
         type="file"
         accept="image/*"
@@ -38,45 +36,41 @@ const ProfilePhotoSelector = ({ image, setImage }) => {
         className="hidden"
       />
 
-      {!previewUrl ? (
-        // Placeholder for no image
-        <div
-          onClick={onChooseFile}
-          className="w-20 h-20 flex items-center justify-center bg-purple-100 rounded-full cursor-pointer relative hover:bg-purple-200 transition-colors duration-300"
-        >
-          <LuUser className="text-4xl text-primary" />
-          <div className="absolute -bottom-1 -right-1 w-8 h-8 flex items-center justify-center bg-primary text-white rounded-full shadow-md transition-transform duration-300">
-            <LuUpload />
+      {/* Avatar */}
+      <div
+        className="w-24 h-24 rounded-full overflow-hidden shadow-lg cursor-pointer transition-transform duration-300 hover:scale-105"
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        onClick={onChooseFile}
+      >
+        {!previewUrl ? (
+          <div className="w-full h-full flex items-center justify-center bg-purple-100">
+            <LuUser className="text-4xl text-primary" />
           </div>
-        </div>
-      ) : (
-        // Existing image with hover effect
-        <div
-          className="relative w-20 h-20 rounded-full overflow-hidden cursor-pointer"
-          onMouseEnter={() => setHovered(true)}
-          onMouseLeave={() => setHovered(false)}
-        >
+        ) : (
           <img
             src={previewUrl}
             alt="Profile"
-            className="w-full h-full object-cover rounded-full border border-gray-300"
-            onClick={onChooseFile} // Click to change photo
+            className={`w-full h-full object-cover rounded-full transition-opacity duration-500 ${
+              uploading ? "opacity-60" : "opacity-100"
+            }`}
           />
+        )}
 
-          {/* Trash button with fade + scale + delayed color fill */}
-          <button
-            type="button"
-            onClick={handleRemoveImage}
-            className={`absolute bottom-1 right-1 w-8 h-8 flex items-center justify-center rounded-full shadow-md
-                        transform transition-all duration-500
-                        ${hovered ? "opacity-100 scale-100 bg-red-500" : "opacity-0 scale-75 bg-red-300"}
-                        hover:bg-red-600`}
-            style={{ transitionProperty: "opacity, transform, background-color" }}
-          >
-            <LuTrash size={16} />
-          </button>
-        </div>
-      )}
+        {/* Camera Overlay */}
+        {hovered && !uploading && (
+          <div className="absolute inset-0 bg-black/30 flex items-center justify-center rounded-full transition-opacity duration-300">
+            <LuUpload className="text-white text-2xl animate-bounce" />
+          </div>
+        )}
+
+        {/* Uploading Spinner */}
+        {uploading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/30 rounded-full">
+            <div className="w-6 h-6 border-4 border-white border-t-transparent border-b-transparent rounded-full animate-spin"></div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
