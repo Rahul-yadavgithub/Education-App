@@ -1,19 +1,20 @@
-// src/pages/domains/student/auth/Login.jsx
 import React from "react";
 import AuthLayOut from "../../../Components/LayOuts/AuthLayOut";
-import AuthForm from "../../../Components/AuthFroms/AuthFrom.jsx";
-import { API_PATHS } from "../../../Utils/apiPaths.js";
+import LoginForm from "../../../Components/AuthForms/LoginForm";
+import { useUserAuth } from "../../../Hooks/useUserAuth.jsx";
 
-const StudentLogin = () => (
-  <AuthLayOut>
-    <AuthForm
-      domain="student"
-      type="login"
-      apiPath={API_PATHS.STUDENT.LOGIN}
-      title="Student Login"
-      redirectTo="/student/home"
-    />
-  </AuthLayOut>
-);
+const StudentLogin = () => {
+  useUserAuth();
+
+  return (
+    <AuthLayOut>
+      <LoginForm
+        domain="Student"
+        title="Student Login"
+        redirectTo="/student/home"
+      />
+    </AuthLayOut>
+  );
+};
 
 export default StudentLogin;

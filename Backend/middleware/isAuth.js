@@ -1,38 +1,72 @@
+// middleware/isAuth.js
 import { getUserModel } from "../utils/getUserModel.js";
 import { verifyToken } from "../utils/token.js";
 
 const isAuth = async (req, res, next) => {
   try {
-    const token = req.cookies?.token;
+    // 1️⃣ Extract token — support cookies and headers
+    const bearerHeader = req.headers.authorization;
+    const token =
+      req.cookies?.token ||
+      (bearerHeader && bearerHeader.startsWith("Bearer ")
+        ? bearerHeader.split(" ")[1]
+        : null);
 
     if (!token) {
-      return res.status(401).json({ message: "No token available. Login again." });
+      return res.status(401).json({
+        success: false,
+        message: "Access denied. No token provided.",
+      });
     }
 
-    // Verify token
+    // 2️⃣ Verify token
     const decoded = verifyToken(token, process.env.JWT_ACCESS_SECRET);
-    const { userId, userType } = decoded;
 
-    if (!userId || !userType) {
-      return res.status(401).json({ message: "Invalid token" });
+    if (!decoded) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid or expired token.",
+      });
     }
 
-    // Get the correct model dynamically
+    const { id, userType } = decoded;
+    if (!id || !userType) {
+      return res.status(401).json({
+        success: false,
+        message: "Token missing required data.",
+      });
+    }
+
+    // 3️⃣ Get model dynamically
     const UserModel = getUserModel(userType);
-
-    const user = await UserModel.findById(userId).select("-password");
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
+    if (!UserModel) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid user type: ${userType}`,
+      });
     }
 
-    // Attach user info to request
-    req.userId = userId;
-    req.user = user;
+    // 4️⃣ Find user
+    const user = await UserModel.findById(id).select("-password");
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found.",
+      });
+    }
+
+    // 5️⃣ Attach to request
+    req.userId = id;
     req.userType = userType;
+    req.user = user;
 
     next();
   } catch (error) {
-    return res.status(500).json({ message: `Authentication Error: ${error.message}` });
+    console.error("isAuth Error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal authentication error.",
+    });
   }
 };
 

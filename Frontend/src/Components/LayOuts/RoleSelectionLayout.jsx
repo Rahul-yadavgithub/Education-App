@@ -56,16 +56,12 @@ const RoleSelectionLayout = () => {
             whileTap={{ scale: 0.97 }}
             transition={{ type: "spring", stiffness: 200 }}
             onClick={() => navigate(role.path)}
-            className={`cursor-pointer bg-white shadow-xl rounded-2xl p-6 flex flex-col items-center justify-center border-t-8 border-transparent hover:border-${role.gradient.split(' ')[1]} transition duration-300`}
+            className={`cursor-pointer bg-white shadow-xl rounded-2xl p-6 flex flex-col items-center justify-center border-t-8 border-transparent hover:shadow-lg transition duration-300`}
           >
-            <div
-              className={`bg-gradient-to-r ${role.gradient} p-4 rounded-full shadow-md mb-4`}
-            >
+            <div className={`bg-gradient-to-r ${role.gradient} p-4 rounded-full shadow-md mb-4`}>
               {role.icon}
             </div>
-            <h2 className="text-xl font-semibold text-gray-800">
-              {role.name}
-            </h2>
+            <h2 className="text-xl font-semibold text-gray-800">{role.name}</h2>
           </motion.div>
         ))}
       </motion.div>

@@ -28,7 +28,7 @@ export const signUp = async (req, res) => {
     const verificationToken = user.generateVerificationToken();
     await user.save();
 
-    const verifyUrl = `${process.env.CLIENT_URL}/verify/${verificationToken}`;
+    const verifyUrl = `${process.env.CLIENT_URL}/${userType.toLowerCase()}/verify/${verificationToken}`;
     const message = verifyEmailTemplate(verifyUrl, name);
     await sendEmail(email, "Email Verification", message);
 
@@ -47,6 +47,8 @@ export const login = async (req, res) => {
     return res.status(400).json({ message: "Email, password, and userType are required" });
   }
 
+  console.log("This is our Email: ", email);
+
   try {
     const Model = getUserModel(userType);
     const user = await Model.findOne({ email }).select("+password");
@@ -57,7 +59,7 @@ export const login = async (req, res) => {
     const isMatch = await user.comparePassword(password);
     if (!isMatch) return res.status(400).json({ message: "Invalid email or password" });
 
-    const { accessToken, refreshToken } = generateTokens({ id: user._id });
+    const { accessToken, refreshToken } = generateTokens({ id: user._id , userType});
 
     return res
       .cookie("refreshToken", refreshToken, {
@@ -66,7 +68,18 @@ export const login = async (req, res) => {
         sameSite: "Strict",
         maxAge: 7 * 24 * 60 * 60 * 1000,
       })
-      .json({ message: "Login successful", accessToken });
+      .json({
+        message: "Login successful",
+        accessToken,
+        user: {
+          id: user._id,
+          email: user.email,
+          role: userType,
+          name: user.name,
+          profileImageUrl : user.profileImageUrl,
+        },
+      });
+
   } catch (error) {
     console.error("Login Error:", error);
     return res.status(500).json({ message: "Server error" });
@@ -88,7 +101,7 @@ export const forgotPassword = async (req, res) => {
     const resetToken = user.generatePasswordResetToken();
     await user.save();
 
-    const resetUrl = `${process.env.CLIENT_URL}/reset/${resetToken}`;
+    const resetUrl = `${process.env.CLIENT_URL}/${userType.toLowerCase()}/reset-password/${resetToken}`;
     const message = resetPasswordTemplate(resetUrl, user.name);
     await sendEmail(email, "Reset Password", message);
 
@@ -104,10 +117,14 @@ export const resetPassword = async (req, res) => {
   const { token } = req.params;
   const { password } = req.body;
 
+  console.log("Fronted Send Token: ", token);
+
   if (!password) return res.status(400).json({ message: "Please enter a valid password" });
 
   try {
     const hashToken = crypto.createHash("sha256").update(token).digest("hex");
+
+    console.log("Reset Hashtoken:", hashToken);
 
     // Find user dynamically across all models
     const models = [getUserModel("Student"), getUserModel("Teacher"), getUserModel("HeadOfCollege"), getUserModel("HeadOfDistrict")];
@@ -141,6 +158,8 @@ export const logout = (req, res) => {
 export const verifyEmail = async (req, res) => {
   const { token } = req.params;
 
+  console.log("This is Token", token);
+
   try {
     // Check across all user models
     const models = [getUserModel("Student"), getUserModel("Teacher"), getUserModel("HeadOfCollege"), getUserModel("HeadOfDistrict")];
@@ -150,6 +169,8 @@ export const verifyEmail = async (req, res) => {
       user = await Model.findOne({ verificationToken: token });
       if (user) break;
     }
+
+    console.log("This is User: ", user);
 
     if (!user) return res.status(400).json({ message: "Invalid or expired token" });
 

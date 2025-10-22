@@ -1,19 +1,20 @@
-// src/pages/domains/student/auth/ForgotPassword.jsx
 import React from "react";
 import AuthLayOut from "../../../Components/LayOuts/AuthLayOut";
-import AuthForm from "../../../Components/AuthFroms/AuthFrom.jsx";
-import { API_PATHS } from "../../../Utils/apiPaths.js";
+import ForgotPassword from "../../../Components/AuthForms/ForgotPassword";
+import { useUserAuth } from "../../../Hooks/useUserAuth.jsx";
 
-const StudentForgotPassword = () => (
-  <AuthLayOut>
-    <AuthForm
-      domain="student"
-      type="forgotPassword"
-      apiPath={API_PATHS.STUDENT.FORGOTPASSWORD}
-      title="Forgot Password"
-      redirectTo="/student/login" // optional redirect after success message
-    />
-  </AuthLayOut>
-);
+const StudentForgotPassword = () => {
+  useUserAuth();
+
+  return (
+    <AuthLayOut>
+      <ForgotPassword
+        title="Student Forgot Password"
+        redirectTo="/student/login"
+        domain="Student"
+      />
+    </AuthLayOut>
+  );
+};
 
 export default StudentForgotPassword;

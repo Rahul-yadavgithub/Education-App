@@ -1,3 +1,4 @@
+// frontend/src/Utils/axiosInstance.js
 import axios from "axios";
 import { BASE_URL } from "./apiPaths";
 
@@ -8,28 +9,66 @@ const axiosInstance = axios.create({
     "Content-Type": "application/json",
     Accept: "application/json",
   },
-  withCredentials: true, // ✅ Automatically send cookies
+  withCredentials: true, // ✅ include cookies for refresh token
 });
 
-// Interceptor for responses
+// ✅ Request interceptor: attach token + log request
+axiosInstance.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem("accessToken");
+
+    // ✅ Attach bearer token to every request
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+
+    console.log(
+      `[Axios Request] ${config.method?.toUpperCase()} ${config.url}`,
+      token ? "→ Auth header attached" : "→ No token found"
+    );
+
+    return config;
+  },
+  (error) => {
+    console.error("Request Error:", error.message);
+    return Promise.reject(error);
+  }
+);
+
+// ✅ Response interceptor: handle errors globally
 axiosInstance.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response) {
-      const status = error.response.status;
+      const { status, data } = error.response;
 
-      if (status === 401) {
-        console.error("Unauthorized: redirecting to login...");
-        window.location.href = "/login"; // optional: or show modal
-      } else if (status === 403) {
-        console.error("Forbidden: You don't have access to this resource.");
-      } else if (status === 500) {
-        console.error("Internal Server Error. Please try again later.");
+      console.groupCollapsed(`Axios Error (${status})`);
+      console.error("Message:", data?.message || "No message provided");
+      console.error("Details:", data);
+      console.groupEnd();
+
+      switch (status) {
+        case 401:
+          console.warn("Unauthorized → Redirecting to role selection...");
+          localStorage.removeItem("accessToken");
+          window.location.href = "/role-selection";
+          break;
+
+        case 403:
+          console.warn("Forbidden: Access denied for this user.");
+          break;
+
+        case 500:
+          console.error("Internal Server Error. Try again later.");
+          break;
+
+        default:
+          console.error(`Unexpected Error: ${status}`);
       }
     } else if (error.code === "ECONNABORTED") {
-      console.error("Request timeout. Please try again later.");
+      console.error("Request Timeout (10s). Please retry.");
     } else {
-      console.error("Network error or server is down:", error.message);
+      console.error("Network Error or Server Down:", error.message);
     }
 
     return Promise.reject(error);

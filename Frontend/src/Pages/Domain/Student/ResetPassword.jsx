@@ -1,20 +1,19 @@
-// src/pages/domains/student/auth/ResetPassword.jsx
 import React from "react";
 import { useParams } from "react-router-dom";
 import AuthLayOut from "../../../Components/LayOuts/AuthLayOut";
-import AuthForm from "../../../Components/AuthFroms/AuthFrom.jsx";
-import { API_PATHS } from "../../../Utils/apiPaths.js";
+import ResetPassword from "../../../Components/AuthForms/ResetPassword";
+import { useUserAuth } from "../../../Hooks/useUserAuth.jsx";
 
-const StudentResetPassword = () => {
-  const { token } = useParams(); // token from URL
+const StudentResetPassword = ({ domain }) => {
+  useUserAuth();
+  const { token } = useParams();
 
   return (
     <AuthLayOut>
-      <AuthForm
-        domain="student"
-        type="resetPassword"
-        apiPath={API_PATHS.STUDENT.RESETPASSWORD(token)}
-        title="Reset Password"
+      <ResetPassword
+        token={token}
+        domain={domain}
+        title="Reset Student Password"
         redirectTo="/student/login"
       />
     </AuthLayOut>

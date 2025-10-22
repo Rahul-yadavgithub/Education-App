@@ -1,6 +1,10 @@
-// src/App.jsx
 import React from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { Toaster } from "react-hot-toast";
+
+// ---------- Context ----------
+import UserProvider, { UserDataContext } from "./Context/UserContext.jsx";
+import ProtectedRoute from "./Components/ProtectRouter/ProtectedRoute.jsx";
 
 // ---------- Role Selection ----------
 import RoleSelectionLayout from "./Components/LayOuts/RoleSelectionLayout.jsx";
@@ -10,55 +14,80 @@ import StudentLogin from "./Pages/Domain/Student/Login.jsx";
 import StudentSignup from "./Pages/Domain/Student/SignUp.jsx";
 import StudentForgotPassword from "./Pages/Domain/Student/ForgotPassword.jsx";
 import StudentResetPassword from "./Pages/Domain/Student/ResetPassword.jsx";
+import StudentVerifyEmail from "./Pages/Domain/Student/VerifyEmail.jsx";
 
-import DashboardLayOut from './Pages/HomePage/DashBoard.jsx';
+// ---------- Student Dashboard ----------
+import Dashboard from "./Pages/HomePage/DashBoard.jsx";
 
-// // ---------- Teacher Auth Pages ----------
-// import TeacherLogin from "./pages/domains/teacher/auth/Login.jsx";
-// import TeacherSignup from "./pages/domains/teacher/auth/Signup.jsx";
-// import TeacherForgotPassword from "./pages/domains/teacher/auth/ForgotPassword.jsx";
-// import TeacherResetPassword from "./pages/domains/teacher/auth/ResetPassword.jsx";
-
-// // ---------- Principal Auth Pages ----------
-// import PrincipalLogin from "./pages/domains/headofschool/auth/Login.jsx";
-// import PrincipalSignup from "./pages/domains/headofschool/auth/Signup.jsx";
-// import PrincipalForgotPassword from "./pages/domains/headofschool/auth/ForgotPassword.jsx";
-// import PrincipalResetPassword from "./pages/domains/headofschool/auth/ResetPassword.jsx";
-
-// // ---------- Head of District Auth Pages ----------
-// import DistrictLogin from "./pages/domains/headofdistrict/auth/Login.jsx";
-// import DistrictSignup from "./pages/domains/headofdistrict/auth/Signup.jsx";
-// import DistrictForgotPassword from "./pages/domains/headofdistrict/auth/ForgotPassword.jsx";
-// import DistrictResetPassword from "./pages/domains/headofdistrict/auth/ResetPassword.jsx";
-
-// // ---------- Verify Email ----------
-// import VerifyEmail from "./pages/AuthPage/VerifyEmail.jsx";
-
-// // ---------- Protected/Home Pages ----------
-// import StudentDashboard from "./pages/domains/student/Dashboard.jsx";
-// import TeacherDashboard from "./pages/domains/teacher/Dashboard.jsx";
-// import PrincipalDashboard from "./pages/domains/headofschool/Dashboard.jsx";
-// import DistrictDashboard from "./pages/domains/headofdistrict/Dashboard.jsx";
-
-function App() {
+const App = () => {
   return (
-    <Router>
-      <Routes>
-        {/* Default role selection page */}
-        <Route path="/" element={<RoleSelectionLayout />} />
+    <UserProvider>
+      <Router>
+        <Routes>
+          {/* Root route: redirect based on user context */}
+          <Route path="/" element={<Root />} />
 
-        {/* ---------- Student Routes ---------- */}
-        <Route path="/student/login" element={<StudentLogin />} />
-        <Route path="/student/signup" element={<StudentSignup />} />
-        <Route path="/student/forgot-password" element={<StudentForgotPassword />} />
-        <Route path="/student/reset/:token" element={<StudentResetPassword />} />
-        <Route path="/student/home" element={<DashboardLayOut />} />
+          {/* Public routes */}
+          <Route path="/student/login" element={<StudentLogin />} />
+          <Route path="/student/signup" element={<StudentSignup />} />
+          <Route path="/student/forgot-password" element={<StudentForgotPassword />} />
+          <Route
+            path="/student/reset-password/:token"
+            element={<StudentResetPassword domain="Student" />}
+          />
+          <Route path="/student/verify/:token" element={<StudentVerifyEmail />} />
 
-        {/* Catch all route -> Redirect to default */}
-        <Route path="*" element={<Navigate to="/" />} />
-      </Routes>
-    </Router>
+          {/* Protected student dashboard */}
+          <Route
+            path="/student/home"
+            element={
+              <ProtectedRoute role="Student">
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Default role selection */}
+          <Route path="/role-selection" element={<RoleSelectionLayout />} />
+
+          {/* Catch-all */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Router>
+
+      <Toaster
+        toastOptions={{
+          className: "",
+          style: { fontSize: "13px" },
+        }}
+      />
+    </UserProvider>
   );
-}
+};
 
 export default App;
+
+// ---------- Root component ----------
+const Root = () => {
+  const { user } = React.useContext(UserDataContext);
+
+  if (!user) {
+    // No user → show role selection page
+    return <Navigate to="/role-selection" replace />;
+  }
+
+  // Logged-in users → redirect to their dashboard
+  switch (user.role) {
+    case "student":
+      return <Navigate to="/student/home" replace />;
+    case "teacher":
+      return <Navigate to="/teacher/home" replace />;
+    case "principal":
+      return <Navigate to="/principal/home" replace />;
+    case "district":
+      return <Navigate to="/district-head/home" replace />;
+    default:
+      return <Navigate to="/role-selection" replace />;
+  }
+};
+
