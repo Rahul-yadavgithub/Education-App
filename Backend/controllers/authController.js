@@ -18,8 +18,6 @@ export const signUp = async (req, res) => {
   try {
     const Model = getUserModel(userType);
 
-    console.log("This is Model: ", Model);
-
     const userExists = await Model.findOne({ email });
     if (userExists) {
       return res.status(400).json({ message: "User already exists" });
@@ -48,8 +46,6 @@ export const login = async (req, res) => {
   if (!email || !password || !userType) {
     return res.status(400).json({ message: "Email, password, and userType are required" });
   }
-
-  console.log("This is our Email: ", email);
 
   try {
     const Model = getUserModel(userType);
@@ -129,7 +125,7 @@ export const resetPassword = async (req, res) => {
     console.log("Reset Hashtoken:", hashToken);
 
     // Find user dynamically across all models
-    const models = [getUserModel("Student"), getUserModel("Teacher"), getUserModel("HeadOfCollege"), getUserModel("HeadOfDistrict")];
+    const models = [getUserModel("Student"), getUserModel("Teacher"), getUserModel("Principle"), getUserModel("District")];
     let user = null;
 
     for (const Model of models) {

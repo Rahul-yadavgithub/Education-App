@@ -1,18 +1,26 @@
-import React from "react";
-import { useParams } from "react-router-dom";
+import React, { useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import AuthLayOut from "../../Components/LayOuts/AuthLayOut";
-import ForgotPassword from "../../Components/AuthForms/ForgotPassword";
-import { useUserAuth } from "../../Hooks/useUserAuth.jsx";
+import ForgotPassword from "../../Components/AuthForms/ForgotPassword.jsx";
+import { useUser } from "../../Context/UserContext.jsx"; // ✅ use centralized context
 
 const ForgotPasswordPage = () => {
-  useUserAuth();
-  const { role } = useParams(); // role: "student", "teacher", etc.
+  const { user } = useUser();
+  const { role } = useParams();
+  const navigate = useNavigate();
 
-  // Capitalize first letter of role
+  // ✅ Capitalize first letter of role
   const formattedRole = role.charAt(0).toUpperCase() + role.slice(1);
 
   const title = `${formattedRole} Forgot Password`;
-  const redirectTo = `/${role}/login`; // redirect to role-specific login
+  const redirectTo = `/${role}/login`;
+
+  // ✅ If user already logged in, skip forgot password and redirect
+  useEffect(() => {
+    if (user) {
+      navigate(`/${user.role.toLowerCase()}/home`);
+    }
+  }, [user, navigate]);
 
   return (
     <AuthLayOut>

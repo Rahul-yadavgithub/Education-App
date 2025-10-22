@@ -20,6 +20,7 @@ export const API_PATHS = {
 
   IMAGE: {
     UPLOAD_IMAGE: (domain) => `/api/image/${domain.toLowerCase()}/upload`,
+    UPDATE_PROFILE_IMAGE: (domain) => `/api/image/${domain.toLowerCase()}/update-profile`,
   },
 
   DASHBOARD: {

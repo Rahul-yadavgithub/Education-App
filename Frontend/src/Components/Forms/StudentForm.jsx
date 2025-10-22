@@ -3,7 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import axiosInstance from "../../Utils/axiosInstance.js";
 import InputField from "../Inputs/InputField.jsx";
 import ProfilePhotoSelector from "../Inputs/ProfilePhotoSelector.jsx";
-import  uploadImage  from "../../Utils/uploadImage.js";
+import  { uploadImage }  from "../../Utils/uploadImage.js";
 
 const StudentForm = ({
   apiPath,

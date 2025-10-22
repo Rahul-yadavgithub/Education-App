@@ -7,7 +7,7 @@ const isAuth = async (req, res, next) => {
     // 1️⃣ Extract token — support cookies and headers
     const bearerHeader = req.headers.authorization;
     const token =
-      req.cookies?.token ||
+      req.cookies?.accessToken ||
       (bearerHeader && bearerHeader.startsWith("Bearer ")
         ? bearerHeader.split(" ")[1]
         : null);

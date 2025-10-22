@@ -2,20 +2,19 @@ import React from "react";
 import { Navigate } from "react-router-dom";
 import { useUser } from "../../Context/UserContext";
 
-/**
- * ProtectedRoute Component
- * Wrap pages that require authentication
- */
 const ProtectedRoute = ({ children, role }) => {
-  const { user } = useUser();
+  const { user, loadingUser } = useUser();
 
-  console.log("user:", user);
+  // ⏳ Wait until user is loaded
+  if (loadingUser) return <div>Loading...</div>;
 
-  // User is not logged in → redirect to role selection
+  // 🚫 No user → redirect
   if (!user) return <Navigate to="/role-selection" replace />;
 
-  // Role check (if role prop is provided)
-  if (role && user.role !== role) return <Navigate to="/role-selection" replace />;
+  // 🔒 Role check
+  if (role && user.role !== role) {
+    return <Navigate to="/role-selection" replace />;
+  }
 
   return children;
 };

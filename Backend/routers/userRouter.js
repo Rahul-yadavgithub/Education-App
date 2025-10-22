@@ -2,12 +2,12 @@ import express from "express";
 import isAuth from "../middleware/isAuth.js";
 import authorizeRole from "../middleware/authorizeRole.js";
 
+import getCurrentUser from "../controllers/userController.js";
+
 const Userrouter = express.Router();
 
 // Any authenticated user
-Userrouter.get("/currentUser", isAuth, (req, res) => {
-  res.json({ success: true, user: req.user });
-});
+Userrouter.get("/currentUser",isAuth, getCurrentUser); 
 
 // Only students
 Userrouter.get("/studentDashboard", isAuth, authorizeRole("student"), (req, res) => {

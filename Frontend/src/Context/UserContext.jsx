@@ -1,9 +1,17 @@
-import React, { createContext, useContext, useState, useMemo } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useMemo,
+} from "react";
+import axiosInstance from "../Utils/axiosInstance";
+import { API_PATHS } from "../Utils/apiPaths";
 
-// Create Context
-export const UserDataContext = createContext(null);
+// ✅ Create Context
+export const UserDataContext = createContext(null); // <-- named export
 
-// Custom hook for easier usage
+// ✅ Custom Hook for easy usage
 export const useUser = () => {
   const context = useContext(UserDataContext);
   if (!context) {
@@ -12,26 +20,66 @@ export const useUser = () => {
   return context;
 };
 
-// Provider Component
+// ✅ Provider Component
 const UserProvider = ({ children }) => {
   const [user, setUser] = useState(null);
+  const [loadingUser, setLoadingUser] = useState(true);
 
-  const updateUser = (userData) => setUser(userData);
-  const clearUser = () => setUser(null);
+  useEffect(() => {
+    const fetchCurrentUser = async () => {
+      const token = localStorage.getItem("accessToken");
+      if (!token) {
+        setLoadingUser(false);
+        return;
+      }
 
-  // Memoize to avoid unnecessary re-renders
+      try {
+        const res = await axiosInstance.get(API_PATHS.USER.CURRENT_USER, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (res.data?.user) {
+          setUser(res.data.user);
+        } else {
+          localStorage.removeItem("accessToken");
+        }
+      } catch (err) {
+        console.error("Failed to fetch current user:", err);
+        localStorage.removeItem("accessToken");
+      } finally {
+        setLoadingUser(false);
+      }
+    };
+
+    fetchCurrentUser();
+  }, []);
+
+  const loginUser = (userData, token) => {
+    localStorage.setItem("accessToken", token);
+    setUser(userData);
+  };
+
+  const clearUser = () => {
+    localStorage.removeItem("accessToken");
+    setUser(null);
+  };
+
+  const updateUser = (updatedUser) => setUser(updatedUser);
+
   const value = useMemo(
     () => ({
       user,
+      loadingUser,
+      loginUser,
       updateUser,
       clearUser,
     }),
-    [user]
+    [user, loadingUser]
   );
 
   return (
     <UserDataContext.Provider value={value}>
-      {children}
+      {!loadingUser && children}
     </UserDataContext.Provider>
   );
 };
