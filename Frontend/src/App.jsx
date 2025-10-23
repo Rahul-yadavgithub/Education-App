@@ -22,8 +22,9 @@ import VerifyEmailPage from "./Pages/Auth/VerifyEmailPage.jsx";
 // ---------- Role Selection ----------
 import RoleSelectionLayout from "./Components/LayOuts/RoleSelectionLayout.jsx";
 
-// ---------- Dashboard ----------
+// ---------- Dashboards ----------
 import Dashboard from "./Pages/HomePage/DashBoard.jsx";
+import TeacherDashboard from "./Components/Teacher/TeacherDashboard.jsx"; // ✅ NEW
 
 const App = () => {
   return (
@@ -42,8 +43,18 @@ const App = () => {
         />
         <Route path="/:role/verify/:token" element={<VerifyEmailPage />} />
 
-        {/* Protected dashboard */}
+        {/* Protected dashboards */}
         <Route path="/:role/home" element={<ProtectedDashboard />} />
+
+        {/* ✅ Teacher Dashboard (special route) */}
+        <Route
+          path="/teacher/dashboard"
+          element={
+            <ProtectedRoute role="Teacher">
+              <TeacherDashboard />
+            </ProtectedRoute>
+          }
+        />
 
         {/* Role selection */}
         <Route path="/role-selection" element={<RoleSelectionLayout />} />
@@ -101,11 +112,21 @@ const ProtectedDashboard = () => {
   const normalizedUserRole = user.role?.toLowerCase();
   const normalizedRouteRole = role?.toLowerCase();
 
-  // If the URL role doesn't match the logged-in role, redirect correctly
+  // ✅ Ensure user only views their own role's page
   if (normalizedUserRole !== normalizedRouteRole) {
     return <Navigate to={`/${normalizedUserRole}/home`} replace />;
   }
 
+  // ✅ Automatically show TeacherDashboard for teachers
+  if (normalizedUserRole === "teacher") {
+    return (
+      <ProtectedRoute role="Teacher">
+        <TeacherDashboard />
+      </ProtectedRoute>
+    );
+  }
+
+  // ✅ Default dashboard for all other roles
   return (
     <ProtectedRoute role={user.role}>
       <Dashboard />

@@ -7,7 +7,10 @@ import {
   verifyEmail,
   forgotPassword,
   resetPassword,
+  refreshToken,
 } from "../controllers/authController.js";
+
+import { verifyAccessToken } from "../middleware/Token.js";
 
 const authRoute = express.Router();
 
@@ -20,10 +23,14 @@ const authRoute = express.Router();
 
 authRoute.post("/:role/signUp", signUp);
 authRoute.post("/:role/login", login);
-authRoute.post("/:role/logout", logout);
 
 authRoute.get("/:role/verify/:token", verifyEmail);
 authRoute.post("/:role/forgot-password", forgotPassword);
 authRoute.post("/:role/reset-password/:token", resetPassword);
 
+authRoute.post("/refresh-token", refreshToken);
+
+authRoute.post("/logout", verifyAccessToken, logout);
+
 export default authRoute;
+

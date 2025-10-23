@@ -1,9 +1,11 @@
 import crypto from "crypto";
 import { getUserModel } from "../utils/getUserModel.js";
-import { generateTokens } from '../utils/token.js';
+import { generateTokens , refreshAccessToken } from '../utils/token.js';
 import sendEmail from '../utils/sendEmail.js';
 import { verifyEmailTemplate } from '../utils/EmailTemplate/verifyEmailTemplate.js';
 import { resetPasswordTemplate } from '../utils/EmailTemplate/resetPasswordTemplate.js';
+
+import { TokenBlacklist } from "../model/Token/TokenBlacklist.js";
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -115,8 +117,6 @@ export const resetPassword = async (req, res) => {
   const { token } = req.params;
   const { password } = req.body;
 
-  console.log("Fronted Send Token: ", token);
-
   if (!password) return res.status(400).json({ message: "Please enter a valid password" });
 
   try {
@@ -148,8 +148,62 @@ export const resetPassword = async (req, res) => {
 };
 
 // ------------------ LOGOUT ------------------
-export const logout = (req, res) => {
-  res.status(200).json({ message: "User logged out!" });
+/**
+ * @desc Securely logs out user by blacklisting refresh token and clearing cookies
+ */
+export const logout = async (req, res) => {
+  try {
+    const refreshToken = req.cookies?.refreshToken;
+
+    const cookieOptions = {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "Strict",
+    };
+
+    // Always clear cookies
+    res.clearCookie("accessToken", cookieOptions);
+    res.clearCookie("refreshToken", cookieOptions);
+
+    if (refreshToken) {
+      // Decode token expiration
+      let expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // fallback
+      try {
+        const decoded = jwt.decode(refreshToken);
+        if (decoded?.exp) expiresAt = new Date(decoded.exp * 1000);
+      } catch (err) {
+        console.warn("Could not decode refresh token:", err.message);
+      }
+
+      // Blacklist token
+      await TokenBlacklist.create({ token: refreshToken, expiresAt });
+    }
+
+    return res.status(200).json({ message: "User logged out successfully" });
+  } catch (error) {
+    console.error("Logout error:", error);
+    return res.status(500).json({ message: "Server error during logout" });
+  }
+};
+
+// ---------------- REFRESH ACCESS TOKEN ----------------
+export const refreshToken = async (req, res) => {
+  try {
+    const refreshToken = req.cookies?.refreshToken;
+    if (!refreshToken) return res.status(401).json({ message: "No refresh token" });
+
+    // Check if token is blacklisted
+    const blacklisted = await TokenBlacklist.findOne({ token: refreshToken });
+    if (blacklisted) return res.status(401).json({ message: "Token revoked. Please login again." });
+
+    const newAccessToken = refreshAccessToken(refreshToken);
+    if (!newAccessToken) return res.status(401).json({ message: "Invalid or expired refresh token" });
+
+    return res.json({ accessToken: newAccessToken });
+  } catch (error) {
+    console.error("Refresh token error:", error);
+    return res.status(500).json({ message: "Server error" });
+  }
 };
 
 // ------------------ EMAIL VERIFICATION ------------------

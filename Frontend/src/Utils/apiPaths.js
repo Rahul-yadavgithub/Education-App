@@ -4,7 +4,7 @@ export const API_PATHS = {
   AUTH: {
     LOGIN: (role) => `/api/auth/${role.toLowerCase()}/login`,
     REGISTER: (role) => `/api/auth/${role.toLowerCase()}/signUp`,
-    LOGOUT: (role) => `/api/auth/${role.toLowerCase()}/logout`,
+    LOGOUT:  "/api/auth/logout",
     FORGOTPASSWORD: (role) => `/api/auth/${role.toLowerCase()}/forgot-password`,
     RESETPASSWORD: (role, token) => `/api/auth/${role.toLowerCase()}/reset-password/${token}`,
     VERIFYEMAIL: (role, token) => `/api/auth/${role.toLowerCase()}/verify/${token}`,
@@ -26,4 +26,8 @@ export const API_PATHS = {
   DASHBOARD: {
     GET_DATA: "/api/home",
   },
+
+  REFRESH : {
+    REFRESH_TOKEN : "/api/user/refresh-token",
+  }
 };

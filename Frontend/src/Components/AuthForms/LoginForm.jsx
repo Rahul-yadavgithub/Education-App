@@ -22,6 +22,8 @@ const LoginForm = ({ domain, title, redirectTo }) => {
     try {
       const storedDomain = localStorage.getItem("domain") || domain;
 
+      console.log("token:", storedDomain);
+
       const res = await axiosInstance.post(API_PATHS.AUTH.LOGIN(storedDomain), {
         email,
         password,
@@ -38,6 +40,8 @@ const LoginForm = ({ domain, title, redirectTo }) => {
         if (res.data.user) {
           updateUser(res.data.user);
         }
+
+        console.log("Our Fronted router: ", redirectTo);
 
         navigate(redirectTo || `/${domain.toLowerCase()}/home`);
       } else {
