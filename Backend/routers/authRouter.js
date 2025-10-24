@@ -1,16 +1,17 @@
 // routers/authRouter.js
-import express from "express";
-import {
+
+const express = require("express");
+const {
   signUp,
   login,
   logout,
   verifyEmail,
   forgotPassword,
   resetPassword,
-  refreshToken,
-} from "../controllers/authController.js";
+  refreshTokenHandler,
+} = require("../controllers/authController.js");
 
-import { verifyAccessToken } from "../middleware/Token.js";
+const { verifyAccessToken } = require("../middleware/Token.js");
 
 const authRoute = express.Router();
 
@@ -28,9 +29,8 @@ authRoute.get("/:role/verify/:token", verifyEmail);
 authRoute.post("/:role/forgot-password", forgotPassword);
 authRoute.post("/:role/reset-password/:token", resetPassword);
 
-authRoute.post("/refresh-token", refreshToken);
+authRoute.post("/refresh-token", refreshTokenHandler);
 
 authRoute.post("/logout", verifyAccessToken, logout);
 
-export default authRoute;
-
+module.exports =  { authRoute } ;

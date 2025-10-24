@@ -1,4 +1,8 @@
-import mongoose from "mongoose";
-import { UserBaseSchema } from "./UserBaseSchema.js";
+// models/UserModel.js
 
-export const UserModel = mongoose.model("User", UserBaseSchema);
+const mongoose = require("mongoose");
+const { UserBaseSchema } = require("./UserBaseSchema.js");
+
+const UserModel = mongoose.model("User", UserBaseSchema);
+
+module.exports = { UserModel };

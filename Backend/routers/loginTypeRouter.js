@@ -1,6 +1,6 @@
 // routers/loginTypeRouter.js
-import express from "express";
 
+const express = require("express");
 const loginTypeRouter = express.Router();
 
 // List of roles
@@ -15,4 +15,4 @@ loginTypeRouter.get("/", (req, res) => {
   res.json({ roles });
 });
 
-export default loginTypeRouter;
+module.exports = { loginTypeRouter };

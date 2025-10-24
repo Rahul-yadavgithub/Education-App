@@ -1,17 +1,24 @@
-import sgMail from "@sendgrid/mail";
-import dotenv from "dotenv";
+// sendEmail.js
+const sgMail = require("@sendgrid/mail");
+const dotenv = require("dotenv");
 
 dotenv.config();
 
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
+/**
+ * sendEmail
+ * @param {string} toEmail - Recipient email address
+ * @param {string} subject - Email subject
+ * @param {string} message - HTML content of the email
+ */
 const sendEmail = async (toEmail, subject, message) => {
   try {
     const msg = {
-      to: toEmail, // Recipient email
-      from: "rahuljnv669@gmail.com", // Verified sender email in SendGrid
-      subject: subject,
-      html: message, // HTML content
+      to: toEmail,
+      from: "rahuljnv669@gmail.com", // Must be verified in SendGrid
+      subject,
+      html: message,
     };
 
     await sgMail.send(msg);
@@ -22,4 +29,4 @@ const sendEmail = async (toEmail, subject, message) => {
   }
 };
 
-export default sendEmail;
+module.exports = sendEmail;

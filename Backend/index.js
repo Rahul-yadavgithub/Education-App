@@ -1,17 +1,28 @@
-// index.js or app.js
-import express from "express";
-import dotenv from "dotenv";
-import crypto from "crypto";
-import bcrypt from "bcryptjs";
-import cors from "cors";
-import cookieParser from "cookie-parser"; // Needed for reading cookies
-import connectDB from "./configuration/db.js";
+// index.js
+const express = require("express");
+const dotenv = require("dotenv");
+const crypto = require("crypto");
+const bcrypt = require("bcryptjs");
+const cors = require("cors");
+const cookieParser = require("cookie-parser"); // Needed for reading cookies
+const connectDB = require("./configuration/db.js");
 
-import authRoute from "./routers/authRouter.js";
-import dashRouter from "./routers/dashboardRouter.js";
-import loginTypeRouter from './routers/loginTypeRouter.js';
-import uploadRoute from './routers/uploadImageRouter.js';
-import Userrouter from "./routers/userRouter.js"; // <-- Import userRouter
+const { authRoute } = require("./routers/authRouter.js");
+const  { dashRouter} = require("./routers/dashboardRouter.js");
+const { loginTypeRouter } = require('./routers/loginTypeRouter.js');
+const { uploadRoute } = require('./routers/uploadImageRouter.js');
+const { Userrouter } = require("./routers/userRouter.js"); // <-- Import userRouter
+
+const morgan = require("morgan");
+const helmet = require("helmet");
+
+const { uploadRoutes} = require("./routers/uploadRoutes.js");
+const { paperRoutes} = require("./routers/paperRoutes.js");
+const { historyRoutes} = require("./routers/historyRoutes.js");
+const { adminRoutes } = require("./routers/adminRoutes.js");
+
+const { errorHandler } = require("./middleware/errorHandler.js");
+const path = require("path");
 
 dotenv.config();
 
@@ -19,7 +30,7 @@ const app = express();
 const port = process.env.PORT || 8000;
 
 // Connect to database
-await connectDB();
+connectDB();
 
 // Middleware
 app.use(
@@ -28,6 +39,9 @@ app.use(
     credentials: true, // Allow cookies
   })
 );
+
+app.use(helmet());
+app.use(morgan("dev"));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser()); // 🔹 Important for isAuth to read token
@@ -40,6 +54,12 @@ app.use("/api/login-type", loginTypeRouter);
 
 // 🔹 User routes (role-based + authenticated)
 app.use("/api/user", Userrouter);
+
+// AI related Router
+app.use("/api/upload", uploadRoutes);
+app.use("/api/paper", paperRoutes); // main generation endpoint
+app.use("/api/history", historyRoutes);
+app.use("/api/admin", adminRoutes);
 
 // Health check / default route
 app.get("/", (req, res) => {

@@ -1,24 +1,27 @@
-import mongoose from "mongoose";
-import { UserModel } from "./User.js";
+// models/HeadOfDistrict.js
 
-const HeadOfDistrictSchema = new mongoose.Schema({
-  districtName: { 
-    type: String, 
-    required: true 
+const mongoose = require("mongoose");
+const { UserModel } = require("./User.js");
+
+const HeadOfDistrictSchema = new mongoose.Schema(
+  {
+    districtName: { 
+      type: String, 
+      required: true 
     },
-
-  officeId: { 
-    type: String, 
-    required: true, 
-    unique: true 
-   },
-
-  designation: { 
-    type: String, 
-    default: "Head of District" 
+    officeId: { 
+      type: String, 
+      required: true, 
+      unique: true 
+    },
+    designation: { 
+      type: String, 
+      default: "Head of District" 
+    },
   },
-}, { timestamps: true });
+  { timestamps: true }
+);
 
 const HeadOfDistrictModel = UserModel.discriminator("District", HeadOfDistrictSchema);
 
-export default HeadOfDistrictModel;
+module.exports = HeadOfDistrictModel;

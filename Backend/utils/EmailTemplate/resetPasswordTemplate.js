@@ -1,4 +1,6 @@
-export const resetPasswordTemplate = (resetUrl, name) => {
+// utils/emailTemplates.js
+
+const resetPasswordTemplate = (resetUrl, name) => {
   return `
   <div style="font-family: Arial, sans-serif; text-align: center; color: #333;">
     <h2 style="color: #1a73e8;">Hello ${name},</h2>
@@ -13,3 +15,5 @@ export const resetPasswordTemplate = (resetUrl, name) => {
   </div>
   `;
 };
+
+module.exports = { resetPasswordTemplate };

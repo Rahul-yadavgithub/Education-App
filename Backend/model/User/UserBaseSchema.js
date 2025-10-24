@@ -1,11 +1,13 @@
 // models/UserBaseSchema.js
-import mongoose from "mongoose";
-import bcrypt from "bcryptjs";
-import crypto from "crypto";
+
+const mongoose = require("mongoose");
+const bcrypt = require("bcryptjs");
+const crypto = require("crypto");
 
 const Schema = mongoose.Schema;
 
-export const UserBaseSchema = new Schema({
+const UserBaseSchema = new Schema(
+  {
     name: {
       type: String,
       required: [true, "Name is required"],
@@ -70,6 +72,8 @@ UserBaseSchema.methods.generateVerificationToken = function () {
 UserBaseSchema.methods.generatePasswordResetToken = function () {
   const resetToken = crypto.randomBytes(64).toString("hex");
   this.resetPasswordToken = crypto.createHash("sha256").update(resetToken).digest("hex");
-  this.resetPasswordExpire = Date.now() + 15 * 60 * 1000;
+  this.resetPasswordExpire = Date.now() + 15 * 60 * 1000; // 15 minutes
   return resetToken;
 };
+
+module.exports = { UserBaseSchema };

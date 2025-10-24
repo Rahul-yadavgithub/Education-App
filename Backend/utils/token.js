@@ -1,5 +1,5 @@
 // utils/token.js
-import jwt from "jsonwebtoken";
+const jwt = require("jsonwebtoken");
 
 /**
  * Generates access and refresh tokens.
@@ -76,4 +76,4 @@ const refreshAccessToken = (refreshToken) => {
   }
 };
 
-export { generateTokens, verifyToken, refreshAccessToken };
+module.exports = { generateTokens, verifyToken, refreshAccessToken };

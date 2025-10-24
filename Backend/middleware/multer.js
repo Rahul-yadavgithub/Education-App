@@ -1,29 +1,23 @@
 // middleware/multer.js
-import multer from "multer";
+
+const multer = require("multer");
 
 /**
- * Multer configuration using memory storage
- * - Files are temporarily stored in RAM
- * - We later write them to disk manually for Cloudinary upload
+ * ✅ Memory storage for images
+ * Useful when uploading directly to Cloudinary or another external service
  */
-
-// Store files in memory (not saved to disk)
 const storage = multer.memoryStorage();
 
-/**
- * Allow only image files (JPEG/JPG/PNG)
- */
 const fileFilter = (req, file, cb) => {
-  const allowedTypes = ["image/jpeg", "image/jpg", "image/png"];
-
-  if (allowedTypes.includes(file.mimetype)) {
-    cb(null, true);
-  } else {
-    cb(new Error("Only JPEG, JPG, or PNG images are allowed"), false);
-  }
+  const allowed = ["image/jpeg", "image/jpg", "image/png"];
+  if (allowed.includes(file.mimetype)) cb(null, true);
+  else cb(new Error("Only JPEG, JPG, or PNG images are allowed"), false);
 };
 
-// Create the upload middleware
-const upload = multer({ storage, fileFilter });
+const upload = multer({
+  storage,
+  fileFilter,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB
+});
 
-export default upload;
+module.exports = upload;

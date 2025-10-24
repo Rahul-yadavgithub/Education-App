@@ -1,16 +1,17 @@
-import crypto from "crypto";
-import { getUserModel } from "../utils/getUserModel.js";
-import { generateTokens , refreshAccessToken } from '../utils/token.js';
-import sendEmail from '../utils/sendEmail.js';
-import { verifyEmailTemplate } from '../utils/EmailTemplate/verifyEmailTemplate.js';
-import { resetPasswordTemplate } from '../utils/EmailTemplate/resetPasswordTemplate.js';
-
-import { TokenBlacklist } from "../model/Token/TokenBlacklist.js";
-import dotenv from 'dotenv';
+const crypto = require("crypto");
+const dotenv = require("dotenv");
 dotenv.config();
 
+const { getUserModel } = require("../utils/getUserModel.js");
+const { generateTokens, refreshAccessToken } = require('../utils/token.js');
+const sendEmail = require('../utils/sendEmail.js');
+const { verifyEmailTemplate } = require('../utils/EmailTemplate/verifyEmailTemplate.js');
+const { resetPasswordTemplate } = require('../utils/EmailTemplate/resetPasswordTemplate.js');
+const { TokenBlacklist } = require("../model/Token/TokenBlacklist.js");
+const jwt = require("jsonwebtoken");
+
 // ------------------ SIGNUP ------------------
-export const signUp = async (req, res) => {
+const signUp = async (req, res) => {
   const { name, email, password, profileImageUrl, userType, ...rest } = req.body;
 
   if (!name || !email || !password || !userType) {
@@ -19,14 +20,10 @@ export const signUp = async (req, res) => {
 
   try {
     const Model = getUserModel(userType);
-
     const userExists = await Model.findOne({ email });
-    if (userExists) {
-      return res.status(400).json({ message: "User already exists" });
-    }
+    if (userExists) return res.status(400).json({ message: "User already exists" });
 
     const user = new Model({ name, email, password, profileImageUrl, ...rest });
-
     const verificationToken = user.generateVerificationToken();
     await user.save();
 
@@ -42,8 +39,10 @@ export const signUp = async (req, res) => {
 };
 
 // ------------------ LOGIN ------------------
-export const login = async (req, res) => {
+const login = async (req, res) => {
   const { email, password, userType } = req.body;
+
+  console.log("User Email: ", email);
 
   if (!email || !password || !userType) {
     return res.status(400).json({ message: "Email, password, and userType are required" });
@@ -59,7 +58,7 @@ export const login = async (req, res) => {
     const isMatch = await user.comparePassword(password);
     if (!isMatch) return res.status(400).json({ message: "Invalid email or password" });
 
-    const { accessToken, refreshToken } = generateTokens({ id: user._id , userType});
+    const { accessToken, refreshToken } = generateTokens({ id: user._id, userType });
 
     return res
       .cookie("refreshToken", refreshToken, {
@@ -76,10 +75,9 @@ export const login = async (req, res) => {
           email: user.email,
           role: userType,
           name: user.name,
-          profileImageUrl : user.profileImageUrl,
+          profileImageUrl: user.profileImageUrl,
         },
       });
-
   } catch (error) {
     console.error("Login Error:", error);
     return res.status(500).json({ message: "Server error" });
@@ -87,7 +85,7 @@ export const login = async (req, res) => {
 };
 
 // ------------------ FORGOT PASSWORD ------------------
-export const forgotPassword = async (req, res) => {
+const forgotPassword = async (req, res) => {
   const { email, userType } = req.body;
 
   if (!email || !userType) return res.status(400).json({ message: "Email and userType required" });
@@ -95,7 +93,6 @@ export const forgotPassword = async (req, res) => {
   try {
     const Model = getUserModel(userType);
     const user = await Model.findOne({ email });
-
     if (!user) return res.status(400).json({ message: "User not found" });
 
     const resetToken = user.generatePasswordResetToken();
@@ -113,7 +110,7 @@ export const forgotPassword = async (req, res) => {
 };
 
 // ------------------ RESET PASSWORD ------------------
-export const resetPassword = async (req, res) => {
+const resetPassword = async (req, res) => {
   const { token } = req.params;
   const { password } = req.body;
 
@@ -122,10 +119,12 @@ export const resetPassword = async (req, res) => {
   try {
     const hashToken = crypto.createHash("sha256").update(token).digest("hex");
 
-    console.log("Reset Hashtoken:", hashToken);
-
-    // Find user dynamically across all models
-    const models = [getUserModel("Student"), getUserModel("Teacher"), getUserModel("Principle"), getUserModel("District")];
+    const models = [
+      getUserModel("Student"),
+      getUserModel("Teacher"),
+      getUserModel("Principle"),
+      getUserModel("District")
+    ];
     let user = null;
 
     for (const Model of models) {
@@ -148,10 +147,7 @@ export const resetPassword = async (req, res) => {
 };
 
 // ------------------ LOGOUT ------------------
-/**
- * @desc Securely logs out user by blacklisting refresh token and clearing cookies
- */
-export const logout = async (req, res) => {
+const logout = async (req, res) => {
   try {
     const refreshToken = req.cookies?.refreshToken;
 
@@ -161,13 +157,11 @@ export const logout = async (req, res) => {
       sameSite: "Strict",
     };
 
-    // Always clear cookies
     res.clearCookie("accessToken", cookieOptions);
     res.clearCookie("refreshToken", cookieOptions);
 
     if (refreshToken) {
-      // Decode token expiration
-      let expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // fallback
+      let expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
       try {
         const decoded = jwt.decode(refreshToken);
         if (decoded?.exp) expiresAt = new Date(decoded.exp * 1000);
@@ -175,7 +169,6 @@ export const logout = async (req, res) => {
         console.warn("Could not decode refresh token:", err.message);
       }
 
-      // Blacklist token
       await TokenBlacklist.create({ token: refreshToken, expiresAt });
     }
 
@@ -187,12 +180,11 @@ export const logout = async (req, res) => {
 };
 
 // ---------------- REFRESH ACCESS TOKEN ----------------
-export const refreshToken = async (req, res) => {
+const refreshTokenHandler = async (req, res) => {
   try {
     const refreshToken = req.cookies?.refreshToken;
     if (!refreshToken) return res.status(401).json({ message: "No refresh token" });
 
-    // Check if token is blacklisted
     const blacklisted = await TokenBlacklist.findOne({ token: refreshToken });
     if (blacklisted) return res.status(401).json({ message: "Token revoked. Please login again." });
 
@@ -207,12 +199,16 @@ export const refreshToken = async (req, res) => {
 };
 
 // ------------------ EMAIL VERIFICATION ------------------
-export const verifyEmail = async (req, res) => {
+const verifyEmail = async (req, res) => {
   const { token } = req.params;
 
   try {
-    // Check across all user models
-    const models = [getUserModel("Student"), getUserModel("Teacher"), getUserModel("Principle"), getUserModel("District")];
+    const models = [
+      getUserModel("Student"),
+      getUserModel("Teacher"),
+      getUserModel("Principle"),
+      getUserModel("District")
+    ];
     let user = null;
 
     for (const Model of models) {
@@ -231,4 +227,14 @@ export const verifyEmail = async (req, res) => {
     console.error("Email verification error:", error.message);
     return res.status(500).json({ message: "Server error" });
   }
+};
+
+module.exports = {
+  signUp,
+  login,
+  forgotPassword,
+  resetPassword,
+  logout,
+  refreshTokenHandler,
+  verifyEmail
 };

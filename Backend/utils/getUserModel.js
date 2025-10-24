@@ -1,9 +1,10 @@
-import StudentModel from "../model/User/StudentModel.js";
-import TeacherModel from "../model/User/TeacherModel.js";
-import HeadOfCollegeModel from "../model/User/HeadOfCollege.js";
-import HeadOfDistrictModel from "../model/User/HeadOfDistrict.js";
+// getUserModel.js
+const StudentModel = require("../model/User/StudentModel.js");
+const TeacherModel = require("../model/User/TeacherModel.js");
+const HeadOfCollegeModel = require("../model/User/HeadOfCollege.js");
+const HeadOfDistrictModel = require("../model/User/HeadOfDistrict.js");
 
-export const getUserModel = (userType) => {
+const getUserModel = (userType) => {
   switch (userType) {
     case "Student":
       return StudentModel;
@@ -17,3 +18,5 @@ export const getUserModel = (userType) => {
       throw new Error("Invalid userType");
   }
 };
+
+module.exports = { getUserModel } ;

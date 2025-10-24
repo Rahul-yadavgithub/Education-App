@@ -1,4 +1,6 @@
-export const verifyEmailTemplate = (verifyUrl, name) => {
+// utils/emailTemplates.js
+
+const verifyEmailTemplate = (verifyUrl, name) => {
   return `
   <div style="font-family: Arial, sans-serif; text-align: center; color: #333;">
     <h2 style="color: #1a73e8;">Hello ${name},</h2>
@@ -13,3 +15,5 @@ export const verifyEmailTemplate = (verifyUrl, name) => {
   </div>
   `;
 };
+
+module.exports = { verifyEmailTemplate };

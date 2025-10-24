@@ -36,6 +36,8 @@ const LoginForm = ({ domain, title, redirectTo }) => {
         localStorage.setItem("accessToken", res.data.accessToken);
         localStorage.removeItem("domain");
 
+        console.log("our Token:", res.data.accessToken);
+
         // ✅ Update global user context
         if (res.data.user) {
           updateUser(res.data.user);

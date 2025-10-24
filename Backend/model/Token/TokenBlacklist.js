@@ -1,5 +1,6 @@
 // models/TokenBlacklist.js
-import mongoose from "mongoose";
+
+const mongoose = require("mongoose");
 
 const tokenBlacklistSchema = new mongoose.Schema({
   token: { type: String, required: true, unique: true },
@@ -9,4 +10,6 @@ const tokenBlacklistSchema = new mongoose.Schema({
 // Automatically remove expired blacklisted tokens
 tokenBlacklistSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
-export const TokenBlacklist = mongoose.model("TokenBlacklist", tokenBlacklistSchema);
+const TokenBlacklist = mongoose.model("TokenBlacklist", tokenBlacklistSchema);
+
+module.exports = { TokenBlacklist };

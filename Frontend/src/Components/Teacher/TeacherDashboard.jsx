@@ -27,9 +27,12 @@ export default function TeacherDashboard() {
   const [contentHeight, setContentHeight] = useState(null);
   const contentRef = useRef(null);
 
+  // Dynamically update container height for smooth tab transitions
   useEffect(() => {
     const el = contentRef.current;
-    if (el) setContentHeight(el.getBoundingClientRect().height);
+    if (el) {
+      setContentHeight(el.getBoundingClientRect().height);
+    }
   }, [active]);
 
   return (
@@ -74,7 +77,7 @@ export default function TeacherDashboard() {
           {/* Tab content */}
           <div
             ref={contentRef}
-            className="relative"
+            className="relative transition-all duration-300"
             style={{ minHeight: contentHeight || undefined }}
           >
             <AnimatePresence mode="wait" initial={false}>

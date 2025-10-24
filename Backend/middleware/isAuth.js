@@ -1,6 +1,7 @@
 // middleware/isAuth.js
-import { getUserModel } from "../utils/getUserModel.js";
-import { verifyToken } from "../utils/token.js";
+const { getUserModel } = require("../utils/getUserModel.js");
+const { verifyToken } = require("../utils/token.js");
+require("dotenv").config();
 
 const isAuth = async (req, res, next) => {
   try {
@@ -29,6 +30,8 @@ const isAuth = async (req, res, next) => {
       });
     }
 
+    console.log("Backend Decoded: ", decoded);
+
     const { id, userType } = decoded;
     if (!id || !userType) {
       return res.status(401).json({
@@ -55,6 +58,8 @@ const isAuth = async (req, res, next) => {
       });
     }
 
+    console.log("Backend user: ", user);
+
     // 5️⃣ Attach to request
     req.userId = id;
     req.userType = userType;
@@ -70,4 +75,11 @@ const isAuth = async (req, res, next) => {
   }
 };
 
-export default isAuth;
+const adminOnly = (req, res, next) => {
+  if (req.user?.role !== "Teacher") {
+    return res.status(403).json({ msg: "Forbidden: admin role required" });
+  }
+  next();
+};
+
+module.exports = { isAuth, adminOnly };

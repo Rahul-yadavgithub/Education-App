@@ -1,11 +1,12 @@
 // middleware/verifyToken.js
-import jwt from "jsonwebtoken";
-import { TokenBlacklist } from "../model/Token/TokenBlacklist.js";
-import { verifyToken } from "../utils/token.js";
 
-export const verifyAccessToken = async (req, res, next) => {
+const jwt = require("jsonwebtoken");
+const { TokenBlacklist } = require("../model/Token/TokenBlacklist.js");
+const { verifyToken } = require("../utils/token.js");
+
+const verifyAccessToken = async (req, res, next) => {
   try {
-    const token = req.cookies?.accessToken || req.headers.authorization?.split(" ")[1];
+    const token = req.cookies?.accessToken || (req.headers.authorization ? req.headers.authorization.split(" ")[1] : null);
     if (!token) return res.status(401).json({ message: "No token provided" });
 
     // Check if token is blacklisted (for refresh tokens or previous logout)
@@ -26,3 +27,5 @@ export const verifyAccessToken = async (req, res, next) => {
     return res.status(401).json({ message: "Invalid token" });
   }
 };
+
+module.exports = { verifyAccessToken };

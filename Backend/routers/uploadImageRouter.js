@@ -1,17 +1,12 @@
 // routers/uploadImage.js
-import express from "express";
-import upload from "../middleware/multer.js";
-import { uploadOnCloudinary, deleteFromCloudinary } from "../configuration/cloudinary.js";
-import fs from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
-import { getUserModel } from "../utils/getUserModel.js"; // ✅ Dynamic user model resolver
 
-import isAuth from "../middleware/isAuth.js";
-
-// Recreate __dirname for ES Modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const express = require("express");
+const upload = require("../middleware/multer.js");
+const { uploadOnCloudinary, deleteFromCloudinary } = require("../configuration/cloudinary.js");
+const fs = require("fs");
+const path = require("path");
+const { getUserModel } = require("../utils/getUserModel.js");
+const { isAuth } = require("../middleware/isAuth.js");
 
 const uploadRoute = express.Router();
 
@@ -52,7 +47,7 @@ uploadRoute.post("/:role/upload", upload.single("image"), async (req, res) => {
       url,
     });
   } catch (err) {
-    console.error(" Upload error:", err);
+    console.error("Upload error:", err);
     return res.status(500).json({ message: "Internal Server Error" });
   }
 });
@@ -67,11 +62,7 @@ uploadRoute.post("/:role/upload", upload.single("image"), async (req, res) => {
 uploadRoute.put("/:role/update-profile", isAuth, upload.single("image"), async (req, res) => {
   try {
     const { role } = req.params;
-
-    console.log("user role: ", role);
-    const userId = req.user?._id; // Assuming auth middleware sets req.user
-
-    console.log("This is our backend: ", req.user);
+    const userId = req.user?._id;
 
     if (!userId) {
       return res.status(401).json({ message: "Unauthorized. User not authenticated." });
@@ -81,13 +72,11 @@ uploadRoute.put("/:role/update-profile", isAuth, upload.single("image"), async (
       return res.status(400).json({ message: "No file uploaded" });
     }
 
-    // Dynamically get the correct model for this user role
     const Model = getUserModel(role.charAt(0).toUpperCase() + role.slice(1).toLowerCase());
     if (!Model) {
       return res.status(400).json({ message: "Invalid role or model not found" });
     }
 
-    // Fetch user by ID
     const user = await Model.findById(userId);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
@@ -98,7 +87,7 @@ uploadRoute.put("/:role/update-profile", isAuth, upload.single("image"), async (
       try {
         await deleteFromCloudinary(user.profileImageUrl);
       } catch (deleteErr) {
-        console.warn(" Cloudinary delete warning:", deleteErr.message);
+        console.warn("Cloudinary delete warning:", deleteErr.message);
       }
     }
 
@@ -110,7 +99,6 @@ uploadRoute.put("/:role/update-profile", isAuth, upload.single("image"), async (
       return res.status(500).json({ message: "Cloudinary upload failed" });
     }
 
-    // Update the user record
     user.profileImageUrl = newUrl;
     await user.save();
 
@@ -121,9 +109,9 @@ uploadRoute.put("/:role/update-profile", isAuth, upload.single("image"), async (
       url: newUrl,
     });
   } catch (err) {
-    console.error(" Update profile error:", err);
+    console.error("Update profile error:", err);
     return res.status(500).json({ message: "Internal Server Error" });
   }
 });
 
-export default uploadRoute;
+module.exports = { uploadRoute };

@@ -1,6 +1,6 @@
 // configuration/cloudinary.js
-import { v2 as cloudinary } from "cloudinary";
-import fs from "fs";
+const { v2: cloudinary } = require("cloudinary");
+const fs = require("fs");
 
 // ✅ Cloudinary Configuration
 cloudinary.config({
@@ -14,7 +14,7 @@ cloudinary.config({
  * @param {string} filepath - Local path to the file
  * @returns {string|null} - Uploaded image URL
  */
-export const uploadOnCloudinary = async (filepath) => {
+const uploadOnCloudinary = async (filepath) => {
   try {
     if (!filepath) return null;
 
@@ -27,7 +27,7 @@ export const uploadOnCloudinary = async (filepath) => {
 
     return result.secure_url;
   } catch (err) {
-    console.error(" Cloudinary upload failed:", err.message);
+    console.error("Cloudinary upload failed:", err.message);
     return null;
   }
 };
@@ -36,7 +36,7 @@ export const uploadOnCloudinary = async (filepath) => {
  * Delete an existing image from Cloudinary
  * @param {string} imageUrl - Full image URL (secure_url)
  */
-export const deleteFromCloudinary = async (imageUrl) => {
+const deleteFromCloudinary = async (imageUrl) => {
   try {
     if (!imageUrl) return;
 
@@ -53,8 +53,12 @@ export const deleteFromCloudinary = async (imageUrl) => {
       console.warn(`Failed to delete image or not found: ${publicId}`);
     }
   } catch (err) {
-    console.error(" Cloudinary delete failed:", err.message);
+    console.error("Cloudinary delete failed:", err.message);
   }
 };
 
-export { cloudinary };
+module.exports = {
+  cloudinary,
+  uploadOnCloudinary,
+  deleteFromCloudinary
+};
