@@ -1,71 +1,119 @@
-// services/ragService.js
-
+// services/ai/ragService.js
 const fs = require("fs");
 const path = require("path");
-const dotenv = require("dotenv");
-dotenv.config();
-
-const { RecursiveCharacterTextSplitter } = require("@langchain/textsplitters");
-const { PDFLoader } = require("@langchain/community/document_loaders/fs/pdf");
+const { InferenceClient } = require("@huggingface/inference");
 const { Chroma } = require("@langchain/community/vectorstores/chroma");
-const { OpenAIEmbeddings } = require("@langchain/openai");
-const Reference = require("../../model/Genration/Reference.js");
-
-const PERSIST_DIR = process.env.CHROMA_PERSIST_DIR || "./chroma_data";
-
+const { RecursiveCharacterTextSplitter } = require("@langchain/textsplitters");
+const dotenv = require("dotenv");
 const pdf = require("pdf-parse-new");
 
-/**
- * Ingest PDF buffer into Chroma vectorstore
- * @param {Object} param0
- * @param {string} param0.refId - reference id for collection
- * @param {Buffer} param0.buffer - PDF file buffer
- * @param {string} param0.filename - PDF file name
- */
+dotenv.config();
+
+const PERSIST_DIR = process.env.CHROMA_PERSIST_DIR || path.join(__dirname, "../../chroma_data");
+const HF_TOKEN = process.env.HF_TOKEN;
+
+// Make sure persistence directory exists
+if (!fs.existsSync(PERSIST_DIR)) fs.mkdirSync(PERSIST_DIR, { recursive: true });
+
+const client = new InferenceClient(HF_TOKEN);
+
+/* ----------------------------------------------------------
+  HuggingFace Embeddings Wrapper
+----------------------------------------------------------- */
+class HuggingFaceEmbeddings {
+  constructor(model = "sentence-transformers/all-MiniLM-L6-v2") {
+    this.model = model;
+  }
+
+  async embedDocuments(texts) {
+    const vectors = [];
+    for (const t of texts) {
+      vectors.push(await this._embedSingle(t));
+    }
+    return vectors;
+  }
+
+  async embedQuery(text) {
+    return this._embedSingle(text);
+  }
+
+  async _embedSingle(text) {
+    const result = await client.featureExtraction({
+      model: this.model,
+      inputs: text,
+    });
+    // result is nested array [[vector]]
+    return Array.isArray(result[0]) ? result[0] : result;
+  }
+}
+
+const hfEmbeddings = new HuggingFaceEmbeddings();
+
+/* ----------------------------------------------------------
+  Ingest PDF → Split → Embed → Save to Chroma
+----------------------------------------------------------- */
 const ingestPdfToChroma = async ({ refId, buffer, filename }) => {
-  if (!pdf) throw new Error("pdf-parse not loaded");
+  console.log("📘 Processing PDF:", filename);
 
   const data = await pdf(buffer);
   const text = data.text || "";
+  if (!text.trim()) throw new Error("PDF is empty or unreadable.");
 
-  const splitter = new RecursiveCharacterTextSplitter({ chunkSize: 1000, chunkOverlap: 200 });
-  const docs = await splitter.createDocuments([text]);
-
-  const embeddings = new OpenAIEmbeddings({ openAIApiKey: process.env.OPENAI_API_KEY });
-
-  const vectorstore = await Chroma.fromDocuments(docs, embeddings, {
-    collectionName: `ref_${refId}`,
-    persistDirectory: PERSIST_DIR
+  const splitter = new RecursiveCharacterTextSplitter({
+    chunkSize: 1000,
+    chunkOverlap: 200,
   });
 
-  if (typeof vectorstore.persist === "function") {
-    await vectorstore.persist();
+  const docs = await splitter.createDocuments([text]);
+  console.log(`🧩 Split into ${docs.length} chunks.`);
+
+  // Embed each chunk
+  const vectors = await hfEmbeddings.embedDocuments(docs.map((d) => d.pageContent));
+  for (let i = 0; i < docs.length; i++) {
+    docs[i].metadata.vector = vectors[i];
   }
+
+  // ✅ Correct usage: embedding object is 1st argument
+  const vectorstore = await Chroma.fromDocuments(docs, hfEmbeddings, {
+    collectionName: `ref_${refId}`,
+    persistDirectory: PERSIST_DIR,
+    embeddingFunction: (doc) => doc.metadata.vector,
+  });
+
+  if (vectorstore.persist) await vectorstore.persist();
+  console.log(`✅ Chroma collection saved as ref_${refId}`);
 
   return { refId, chunksCount: docs.length, collectionName: `ref_${refId}` };
 };
 
-/**
- * Fetch top-K context chunks from RAG vectorstore
- * @param {string[]} referenceIds
- * @param {Object} options
- * @param {number} options.topK
- * @returns {string[]} Array of text chunks
- */
+
+/* ----------------------------------------------------------
+  Fetch Context from Chroma Collections
+----------------------------------------------------------- */
 const fetchContextFromRag = async (referenceIds = [], { topK = 5 } = {}) => {
-  const embeddings = new OpenAIEmbeddings({ openAIApiKey: process.env.OPENAI_API_KEY });
   const results = [];
 
   for (const refId of referenceIds) {
     const collectionName = `ref_${refId}`;
-    const vs = await Chroma.fromExistingCollection(embeddings, { collectionName, persistDirectory: PERSIST_DIR }).catch(() => null);
-    if (!vs) continue;
+    console.log(`📂 Loading Chroma collection: ${collectionName}`);
+
+    let vs;
+    try {
+      vs = await Chroma.fromExistingCollection({
+        collectionName,
+        persistDirectory: PERSIST_DIR,
+        embeddingFunction: async (text) => await hfEmbeddings.embedQuery(text),
+      });
+    } catch (err) {
+      console.warn(`⚠️ Failed to load collection ${collectionName}:`, err.message);
+      continue;
+    }
 
     try {
       const docs = await vs.similaritySearch("", topK);
-      docs.forEach((d) => results.push(d.pageContent));
+      results.push(...docs.map((d) => d.pageContent));
     } catch (err) {
-      console.warn("RAG retrieval warning:", err?.message || err);
+      console.warn("⚠️ RAG retrieval failed:", err.message);
     }
   }
 

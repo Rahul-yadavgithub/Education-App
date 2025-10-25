@@ -1,43 +1,54 @@
 // services/aiClient.js
 
-const OpenAI = require("openai"); // official OpenAI client
+const { ChatOpenAI } = require("@langchain/openai");
 const aiConfig = require("../../configuration/aiConfig.js");
 
 /**
- * OpenAI client instance
+ * OpenRouter-based LangChain client instance
  */
-const client = new OpenAI({ apiKey: aiConfig.OPENAI_API_KEY });
+const client = new ChatOpenAI({
+  model: aiConfig.OPENAI_MODEL || "openai/gpt-oss-20b:free",
+  apiKey: aiConfig.OPENROUTER_API_KEY, // ✅ must match your OpenRouter key
+  temperature: aiConfig.TEMPERATURE || 0.7,
+  maxTokens: aiConfig.MAX_TOKENS || 1000,
+
+  // ✅ critical part: force LangChain to use OpenRouter endpoint
+  configuration: {
+    baseURL: "https://openrouter.ai/api/v1",
+    defaultHeaders: {
+      "HTTP-Referer": aiConfig.SITE_URL || "", // optional but recommended for OpenRouter ranking
+      "X-Title": aiConfig.SITE_NAME || "",     // optional
+    },
+  },
+});
 
 /**
- * Calls the LLM (Chat Completions API)
- * @param {string} prompt
- * @param {Object} options - { temperature, maxTokens }
- * @returns {Object} { response: string, raw: object, tokens: number }
+ * Calls the LLM via LangChain’s ChatOpenAI (OpenRouter backend)
+ * @param {string} prompt - The user prompt or question.
+ * @param {Object} options - Optional: { temperature, maxTokens }
+ * @returns {Promise<{response: string, raw: object}>}
  */
 const callLLM = async (prompt, options = {}) => {
-  const model = aiConfig.OPENAI_MODEL || "gpt-4o-mini";
-  const temperature = typeof options.temperature !== "undefined" ? options.temperature : aiConfig.TEMPERATURE;
+  const temperature = options.temperature ?? aiConfig.TEMPERATURE;
   const maxTokens = options.maxTokens || aiConfig.MAX_TOKENS;
 
   try {
+    // Construct messages
     const messages = [
       { role: "system", content: "You are an expert academic examiner and exam paper generator. Output valid JSON when requested." },
-      { role: "user", content: prompt }
+      { role: "user", content: prompt },
     ];
 
-    const resp = await client.chat.completions.create({
-      model,
-      messages,
+    // LangChain’s ChatOpenAI interface requires an array of messages
+    const resp = await client.invoke(messages, {
       temperature,
-      max_tokens: maxTokens
+      maxTokens,
     });
 
-    const content = resp?.choices?.[0]?.message?.content || "";
-    const tokens = resp?.usage ? (resp.usage.total_tokens || 0) : 0;
-
-    return { response: content, raw: resp, tokens };
+    const content = resp?.content || "";
+    return { response: content, raw: resp };
   } catch (err) {
-    console.error("LLM call error:", err);
+    console.error("LLM call error:", err?.response?.data || err.message);
     throw err;
   }
 };

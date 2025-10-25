@@ -21,6 +21,8 @@ const { paperRoutes} = require("./routers/paperRoutes.js");
 const { historyRoutes} = require("./routers/historyRoutes.js");
 const { adminRoutes } = require("./routers/adminRoutes.js");
 
+const {downloadRouter} = require("./routers/downlaodRouter.js");
+
 const { errorHandler } = require("./middleware/errorHandler.js");
 const path = require("path");
 
@@ -60,6 +62,8 @@ app.use("/api/upload", uploadRoutes);
 app.use("/api/paper", paperRoutes); // main generation endpoint
 app.use("/api/history", historyRoutes);
 app.use("/api/admin", adminRoutes);
+
+app.use("/api/paper",downloadRouter );
 
 // Health check / default route
 app.get("/", (req, res) => {

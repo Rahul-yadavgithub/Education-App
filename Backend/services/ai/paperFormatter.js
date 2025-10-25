@@ -1,19 +1,26 @@
 // utils/formatPaper.js
-
 const Paper = require("../../model/Genration/Paper.js");
 
 /**
  * Safely parse LLM JSON output
  * @param {string} text
- * @returns {Object}
+ * @returns {Object|null} - Parsed object or null if invalid
  */
 const safeJsonParse = (text) => {
+  if (!text || typeof text !== "string") return null;
+
   try {
     const start = text.indexOf("{");
+    if (start === -1) return null;
+
     const jsonText = text.slice(start);
+
+    // Try parsing JSON
     return JSON.parse(jsonText);
   } catch (err) {
-    throw new Error("Failed to parse LLM JSON output: " + err.message);
+    console.error("LLM JSON parsing failed:", err.message);
+    console.error("Raw LLM output:", text);
+    return null;
   }
 };
 
@@ -26,37 +33,59 @@ const safeJsonParse = (text) => {
 const formatPaperFromLLM = async (llmText, meta = {}) => {
   const obj = safeJsonParse(llmText);
 
-  if (!obj.questions || !Array.isArray(obj.questions)) {
-    throw new Error("LLM output missing questions array");
+  // Fallback empty paper if parsing fails
+  if (!obj) {
+    console.warn("Using fallback empty paper due to invalid LLM output.");
+    return {
+      subject: meta.subject || "Unknown",
+      totalMarks: meta.totalMarks || 0,
+      difficulty: meta.difficulty || "Mixed",
+      duration: meta.duration || "",
+      numQuestions: 0,
+      standard: meta.standard || "Unknown",
+      questions: [],
+      answerKey: [],
+      metadata: {},
+      referenceIds: meta.referenceIds || [],
+      createdBy: meta.createdBy || null,
+    };
   }
 
-  const questions = obj.questions.map((q) => ({
+  // Ensure questions array exists
+  const questions = Array.isArray(obj.questions) ? obj.questions : [];
+  if (!Array.isArray(obj.questions)) {
+    console.warn("LLM output missing questions array, using empty array");
+  }
+
+  const formattedQuestions = questions.map((q) => ({
     text: q.text || q.question || "",
     marks: q.marks || q.mark || 0,
     difficulty: q.difficulty || "medium",
     type: q.type || "short",
-    subparts: q.subparts || []
+    subparts: Array.isArray(q.subparts) ? q.subparts : [],
   }));
 
-  const answerKey = (obj.answerKey || []).map((a) => ({
-    questionIndex: a.questionIndex !== undefined ? a.questionIndex : a.qIndex ?? null,
-    answer: a.answer || a.text || ""
-  }));
+  const formattedAnswerKey = Array.isArray(obj.answerKey)
+    ? obj.answerKey.map((a) => ({
+        questionIndex:
+          a.questionIndex !== undefined ? a.questionIndex : a.qIndex ?? null,
+        answer: a.answer || a.text || "",
+      }))
+    : [];
 
-  const paper = {
+  return {
     subject: obj.subject || meta.subject || "Unknown",
     totalMarks: obj.totalMarks || meta.totalMarks || 0,
     difficulty: obj.difficulty || meta.difficulty || "Mixed",
     duration: obj.duration || meta.duration || "",
-    numQuestions: obj.numQuestions || questions.length,
-    questions,
-    answerKey,
+    numQuestions: obj.numQuestions || formattedQuestions.length,
+    standard: obj.standard || meta.standard || "Unknown",
+    questions: formattedQuestions,
+    answerKey: formattedAnswerKey,
     metadata: obj.metadata || {},
     referenceIds: meta.referenceIds || [],
-    createdBy: meta.createdBy
+    createdBy: meta.createdBy || null,
   };
-
-  return paper;
 };
 
 module.exports = { formatPaperFromLLM };

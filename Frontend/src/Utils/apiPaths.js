@@ -28,12 +28,16 @@ export const API_PATHS = {
   },
 
   REFRESH : {
-    REFRESH_TOKEN : "/api/user/refresh-token",
+    REFRESH_TOKEN : "/api/auth/refresh-token",
   },
 
     PAPER: {
     STATUS: (jobId) => `/api/paper/jobs/${jobId}/status`, 
     GENERATE: "/api/paper/generate-paper", // optional if needed
     UPLOAD_PDF : "/api/upload",
+  },
+
+  DOWNLOAD : {
+    PAPER : (jobId) => `/api/paper/download/${jobId}`,
   }
 };

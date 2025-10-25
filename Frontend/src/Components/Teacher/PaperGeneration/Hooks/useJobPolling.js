@@ -1,99 +1,112 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { API_PATHS } from "../../../../Utils/apiPaths";
 import axiosInstance from "../../../../Utils/axiosInstance";
+import { API_PATHS } from "../../../../Utils/apiPaths";
 
-/**
- * useJobPolling
- * Polls the backend for job status periodically.
- *
- * @param {string} jobId - ID of the generation job
- * @param {object} options - { interval, onComplete, onError, mock }
- * @returns {object} { status, progress, message, stopPolling, isPolling }
- */
 export default function useJobPolling(
   jobId,
-  { interval = 3000, onComplete, onError, mock = false } = {}
+  { interval = 5000, onComplete, onError } = {}
 ) {
-  const [status, setStatus] = useState("idle");
+  const [status, setStatus] = useState("pending");
   const [progress, setProgress] = useState(0);
-  const [message, setMessage] = useState("");
-  const [isPolling, setIsPolling] = useState(false);
+  const [message, setMessage] = useState("Initializing...");
+  const [fileUrl, setFileUrl] = useState(null);
+  const [isPolling, setIsPolling] = useState(false); // ✅ new state
+
   const pollingRef = useRef(null);
-  const isMounted = useRef(true);
+  const requestInProgress = useRef(false);
+  const retryCount = useRef(0);
+  const isUnmounted = useRef(false);
 
   const stopPolling = useCallback(() => {
     if (pollingRef.current) {
-      clearInterval(pollingRef.current);
+      clearTimeout(pollingRef.current);
       pollingRef.current = null;
-      setIsPolling(false);
+      setIsPolling(false); // ✅ update when stopped
     }
   }, []);
 
-  const pollStatus = useCallback(async () => {
-    if (!jobId) return;
+  const verifyPdfExists = useCallback(async (url) => {
+    try {
+      const res = await fetch(url, { method: "GET" });
+      const contentType = res.headers.get("content-type") || "";
+      return res.ok && contentType.includes("pdf");
+    } catch {
+      return false;
+    }
+  }, []);
+
+  const pollJob = useCallback(async () => {
+    if (!jobId || requestInProgress.current) return;
+    requestInProgress.current = true;
 
     try {
-      if (mock) {
-        // Mock polling for local development
-        setProgress((prev) => Math.min(prev + Math.random() * 15, 95));
-        setMessage("Mock generating paper...");
-        if (progress >= 95) {
-          stopPolling();
-          setProgress(100);
-          setStatus("completed");
-          setMessage("✅ Paper generated (mock)!");
-          onComplete?.({ jobId, status: "completed", progress: 100, result: null });
-        }
-        return;
-      }
-
       const { data } = await axiosInstance.get(API_PATHS.PAPER.STATUS(jobId));
+      const jobStatus = (data.status || "pending").toLowerCase();
 
-      if (!isMounted.current) return;
+      if (isUnmounted.current) return;
 
-      setProgress(data.progress ?? progress);
-      setStatus(data.status ?? "running");
-      setMessage(data.statusMessage ?? "Generating...");
+      setStatus(jobStatus);
+      setProgress(data.progress ?? 0);
+      setMessage(data.statusMessage || "Generating paper...");
 
-      if (data.status === "COMPLETE" || data.status === "completed") {
-        stopPolling();
-        setProgress(100);
-        setMessage("✅ Paper generated successfully!");
-        onComplete?.(data);
-      } else if (data.status === "FAILED" || data.status === "failed") {
-        stopPolling();
+      if (jobStatus === "completed" || jobStatus === "complete") {
+        const base = axiosInstance.defaults.baseURL || "";
+        const url = `${base}${API_PATHS.DOWNLOAD.PAPER(jobId)}`;
+
+        console.log("This is our Fronted Url: ", url);
+        const exists = await verifyPdfExists(url);
+
+        if (exists) {
+          setFileUrl(url);
+          setProgress(100);
+          setMessage("✅ Paper generated successfully!");
+          stopPolling();
+          onComplete?.({ data, fileUrl: url });
+        }
+          else if (retryCount.current < 5) {
+            retryCount.current += 1;
+            pollingRef.current = setTimeout(pollJob, interval + 2000);
+          }
+ 
+        else {
+          setStatus("failed");
+          setMessage("❌ File not found after completion.");
+          stopPolling();
+          onError?.(new Error("File not available after job completion"));
+        }
+      } else if (jobStatus === "failed") {
         setStatus("failed");
         setMessage("❌ Paper generation failed.");
+        stopPolling();
         onError?.(data);
+      } else {
+        pollingRef.current = setTimeout(pollJob, interval);
       }
     } catch (err) {
       console.error("Polling error:", err);
-      stopPolling();
       setStatus("failed");
-      setMessage("⚠️ Unable to connect to the server.");
+      setMessage("⚠️ Network error or server down.");
+      stopPolling();
       onError?.(err);
+    } finally {
+      requestInProgress.current = false;
     }
-  }, [jobId, mock, onComplete, onError, progress, stopPolling]);
+  }, [jobId, interval, stopPolling, verifyPdfExists, onComplete, onError]);
 
   useEffect(() => {
-    isMounted.current = true;
-
     if (!jobId) return;
 
-    setStatus("running");
-    setProgress(0);
-    setMessage(mock ? "Mock paper generation..." : "Paper generation started...");
-    setIsPolling(true);
+    isUnmounted.current = false;
+    retryCount.current = 0;
+    setIsPolling(true); // ✅ set when starting
 
-    // Initial poll immediately
-    pollStatus();
-    pollingRef.current = setInterval(pollStatus, interval);
-
+    pollJob(); // start immediately
     return () => {
-      isMounted.current = false;
+      isUnmounted.current = true;
       stopPolling();
     };
-  }, [jobId, interval, pollStatus, mock, stopPolling]);
+  }, [jobId, pollJob, stopPolling]);
 
-  return { status, progress, message, stopPolling, isPolling };
+  // ✅ Return isPolling for UI
+  return { status, progress, message, fileUrl, isPolling, stopPolling };
 }

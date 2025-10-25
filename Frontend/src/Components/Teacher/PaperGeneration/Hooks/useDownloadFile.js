@@ -1,81 +1,63 @@
-import { useState, useEffect } from "react";
+import { useState, useCallback, useRef } from "react";
+import axiosInstance from "../../../../Utils/axiosInstance";
 
 /**
  * useDownloadFile Hook
  * ------------------------------------------
- * Handles downloading the generated question paper.
- *
- * @param {string|null} fileUrl - The URL to download.
- * @param {object} options - Optional config:
- *   {
- *     onComplete: function(blob) { ... } called when download completes
- *     onError: function(err) { ... } called when download fails
- *   }
+ * Handles downloading binary files (PDFs) with progress tracking.
  */
-export default function useDownloadFile(fileUrl, { onComplete, onError } = {}) {
-  const [progress, setProgress] = useState(0); // 0 - 100
-  const [status, setStatus] = useState("idle"); // idle | downloading | completed | failed
+export default function useDownloadFile(fileUrl, fileName = "file.pdf") {
+  const [status, setStatus] = useState("idle");
+  const [progress, setProgress] = useState(0);
   const [error, setError] = useState(null);
+  const abortController = useRef(null);
 
-  useEffect(() => {
-    if (!fileUrl) return;
+  const startDownload = useCallback(async () => {
+    if (!fileUrl) {
+      setError(new Error("No file URL provided"));
+      setStatus("failed");
+      return;
+    }
 
-    let abortController = new AbortController();
+    try {
+      setStatus("downloading");
+      setProgress(0);
+      setError(null);
 
-    const downloadFile = async () => {
-      try {
-        setStatus("downloading");
-        setProgress(0);
-        setError(null);
+      // Abort previous download if any
+      if (abortController.current) abortController.current.abort();
+      abortController.current = new AbortController();
 
-        const response = await fetch(fileUrl, { signal: abortController.signal });
-        if (!response.ok) throw new Error("Failed to download file");
+      const response = await axiosInstance.get(fileUrl, {
+        responseType: "blob", // required for binary files
+        onDownloadProgress: (event) => {
+          if (event.total) {
+            const percent = Math.round((event.loaded * 100) / event.total);
+            setProgress(percent);
+          }
+        },
+        signal: abortController.current.signal,
+      });
 
-        const contentLength = response.headers.get("content-length");
-        const total = contentLength ? parseInt(contentLength, 10) : null;
+      // Create temporary download link
+      const blob = new Blob([response.data], { type: "application/pdf" });
+      const blobUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(blobUrl);
 
-        if (!total) {
-          // If no content-length, fallback
-          const blob = await response.blob();
-          setProgress(100);
-          setStatus("completed");
-          if (onComplete) onComplete(blob);
-          return;
-        }
+      setProgress(100);
+      setStatus("completed");
+    } catch (err) {
+      console.error("Download error:", err);
+      setError(err instanceof Error ? err : new Error(String(err)));
+      setStatus("failed");
+    }
+  }, [fileUrl, fileName]);
 
-        // Stream download with progress
-        const reader = response.body.getReader();
-        const chunks = [];
-        let received = 0;
-
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          chunks.push(value);
-          received += value.length;
-          setProgress(Math.floor((received / total) * 100));
-        }
-
-        const blob = new Blob(chunks, { type: "application/pdf" });
-        setProgress(100);
-        setStatus("completed");
-
-        if (onComplete) onComplete(blob);
-      } catch (err) {
-        if (err.name === "AbortError") return; // User canceled
-        console.error("Download error:", err);
-        setError(err.message || "Download failed");
-        setStatus("failed");
-        if (onError) onError(err);
-      }
-    };
-
-    downloadFile();
-
-    return () => {
-      abortController.abort();
-    };
-  }, [fileUrl]);
-
-  return { status, progress, error };
+  return { status, progress, error, startDownload };
 }

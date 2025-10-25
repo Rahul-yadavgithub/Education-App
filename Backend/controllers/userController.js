@@ -15,8 +15,15 @@ const getCurrentUser = async (req, res) => {
     }
 
     // Return user object
-    return res.status(200).json({ success: true, user });
-  } catch (error) {
+        return res.status(200).json({
+      success: true,
+      user: {
+        ...user.toObject(), // send everything else as-is
+        role: req.userType || user.userType || user._t, // override the role
+      },
+    });
+  } 
+  catch (error) {
     console.error("getCurrentUser Error:", error);
     return res.status(500).json({ message: `Internal server error: ${error.message}` });
   }

@@ -62,7 +62,6 @@ export default function ConfigurationStep({ onGenerate, isGenerating, formError 
     if (parseInt(config.totalMarks) <= 0) newErrors.totalMarks = "Marks must be > 0.";
     if (parseInt(config.duration) <= 0) newErrors.duration = "Duration must be > 0.";
     if (!config.standard) newErrors.standard = "Please select a standard.";
-    if (!config.referenceIds.length) newErrors.pdfFile = "Please upload a PDF book.";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };

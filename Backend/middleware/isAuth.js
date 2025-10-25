@@ -30,8 +30,6 @@ const isAuth = async (req, res, next) => {
       });
     }
 
-    console.log("Backend Decoded: ", decoded);
-
     const { id, userType } = decoded;
     if (!id || !userType) {
       return res.status(401).json({
@@ -57,8 +55,6 @@ const isAuth = async (req, res, next) => {
         message: "User not found.",
       });
     }
-
-    console.log("Backend user: ", user);
 
     // 5️⃣ Attach to request
     req.userId = id;
