@@ -10,24 +10,36 @@ export default function useJobPolling(
   const [progress, setProgress] = useState(0);
   const [message, setMessage] = useState("Initializing...");
   const [fileUrl, setFileUrl] = useState(null);
-  const [isPolling, setIsPolling] = useState(false); // ✅ new state
+  const [isPolling, setIsPolling] = useState(false);
 
   const pollingRef = useRef(null);
   const requestInProgress = useRef(false);
   const retryCount = useRef(0);
   const isUnmounted = useRef(false);
 
-  const stopPolling = useCallback(() => {
+  /** ✅ clear any pending timeouts */
+  const clearPollingTimeout = useCallback(() => {
     if (pollingRef.current) {
       clearTimeout(pollingRef.current);
       pollingRef.current = null;
-      setIsPolling(false); // ✅ update when stopped
     }
   }, []);
 
+  /** ✅ stop polling safely */
+  const stopPolling = useCallback(() => {
+    clearPollingTimeout();
+    setIsPolling(false);
+   requestInProgress.current = false;
+  }, [clearPollingTimeout]);
+
+  /** ✅ verify PDF existence */
   const verifyPdfExists = useCallback(async (url) => {
     try {
-      const res = await fetch(url, { method: "GET" });
+      const fullUrl = url.startsWith("http")
+        ? url
+        : `${axiosInstance.defaults.baseURL}${url}`;
+
+      const res = await fetch(fullUrl, { method: "GET" });
       const contentType = res.headers.get("content-type") || "";
       return res.ok && contentType.includes("pdf");
     } catch {
@@ -35,8 +47,9 @@ export default function useJobPolling(
     }
   }, []);
 
+  /** ✅ main polling logic */
   const pollJob = useCallback(async () => {
-    if (!jobId || requestInProgress.current) return;
+    if (!jobId || requestInProgress.current || !isPolling) return; 
     requestInProgress.current = true;
 
     try {
@@ -49,11 +62,13 @@ export default function useJobPolling(
       setProgress(data.progress ?? 0);
       setMessage(data.statusMessage || "Generating paper...");
 
-      if (jobStatus === "completed" || jobStatus === "complete") {
-        const base = axiosInstance.defaults.baseURL || "";
-        const url = `${base}${API_PATHS.DOWNLOAD.PAPER(jobId)}`;
+      // ✅ clear any previous timeout before deciding next step
+      clearPollingTimeout();
 
-        console.log("This is our Fronted Url: ", url);
+      if (jobStatus === "completed" || jobStatus === "complete") {
+        const url = API_PATHS.DOWNLOAD.PAPER(jobId);
+        console.log("This is our Frontend Url: ", url);
+
         const exists = await verifyPdfExists(url);
 
         if (exists) {
@@ -62,13 +77,10 @@ export default function useJobPolling(
           setMessage("✅ Paper generated successfully!");
           stopPolling();
           onComplete?.({ data, fileUrl: url });
-        }
-          else if (retryCount.current < 5) {
-            retryCount.current += 1;
-            pollingRef.current = setTimeout(pollJob, interval + 2000);
-          }
- 
-        else {
+        } else if (retryCount.current < 5) {
+          retryCount.current += 1;
+          pollingRef.current = setTimeout(pollJob, interval + 2000);
+        } else {
           setStatus("failed");
           setMessage("❌ File not found after completion.");
           stopPolling();
@@ -80,6 +92,7 @@ export default function useJobPolling(
         stopPolling();
         onError?.(data);
       } else {
+        // ✅ only poll again if not done or failed
         pollingRef.current = setTimeout(pollJob, interval);
       }
     } catch (err) {
@@ -91,22 +104,23 @@ export default function useJobPolling(
     } finally {
       requestInProgress.current = false;
     }
-  }, [jobId, interval, stopPolling, verifyPdfExists, onComplete, onError]);
+  }, [jobId, interval, stopPolling, clearPollingTimeout, verifyPdfExists, onComplete, onError]);
 
+  /** ✅ setup and teardown */
   useEffect(() => {
     if (!jobId) return;
 
     isUnmounted.current = false;
     retryCount.current = 0;
-    setIsPolling(true); // ✅ set when starting
+    setIsPolling(true);
+    clearPollingTimeout(); // clear stale timers if any
+    pollJob();
 
-    pollJob(); // start immediately
     return () => {
       isUnmounted.current = true;
       stopPolling();
     };
-  }, [jobId, pollJob, stopPolling]);
+  }, [jobId, pollJob, stopPolling, clearPollingTimeout]);
 
-  // ✅ Return isPolling for UI
   return { status, progress, message, fileUrl, isPolling, stopPolling };
 }

@@ -24,7 +24,7 @@ export default function DownloadStep({ jobId, onRegenerate }) {
 
   const [isShared, setIsShared] = useState(false);
 
-  const isReady = jobStatus === "completed" && !!fileUrl;
+  const isReady = ["completed", "complete"].includes(jobStatus) && !!fileUrl;
   const isDownloading = downloadStatus === "downloading";
   const isDownloaded = downloadStatus === "completed";
 
