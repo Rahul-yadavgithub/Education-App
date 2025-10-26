@@ -30,7 +30,7 @@ dotenv.config();
 
 const NODE_ENV = process.env.NODE_ENV || "production";
 const PORT = process.env.PORT || 8000;
-const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
+const FRONTEND_URL = process.env.CLIENT_URL || "http://localhost:5173";
 
 const isProduction = NODE_ENV === "production";
 
