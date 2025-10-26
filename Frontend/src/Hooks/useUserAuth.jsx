@@ -17,7 +17,7 @@ export const useUserAuth = () => {
     // ✅ Step 2: Check if token exists before making API call
     const hasToken = document.cookie.includes("token=");
 
-    console.log("This is our fronted HasToken:", hasToken);
+    // console.log("This is our fronted HasToken:", hasToken);
     if (!hasToken) {
       console.warn("No auth token found — skipping user fetch.");
       return; // No need to call backend if no token yet

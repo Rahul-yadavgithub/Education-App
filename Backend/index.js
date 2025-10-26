@@ -37,12 +37,15 @@ const port = process.env.PORT || 8000;
 connectDB();
 
 // Middleware
+const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
+
 app.use(
   cors({
-    origin: "http://localhost:5173", // Frontend URL
-    credentials: true, // Allow cookies
+    origin: FRONTEND_URL,
+    credentials: true,
   })
 );
+
 
 app.use(helmet());
 app.use(morgan("dev"));

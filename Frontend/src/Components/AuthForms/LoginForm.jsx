@@ -22,7 +22,7 @@ const LoginForm = ({ domain, title, redirectTo }) => {
     try {
       const storedDomain = localStorage.getItem("domain") || domain;
 
-      console.log("token:", storedDomain);
+      // console.log("token:", storedDomain);
 
       const res = await axiosInstance.post(API_PATHS.AUTH.LOGIN(storedDomain), {
         email,
@@ -30,20 +30,20 @@ const LoginForm = ({ domain, title, redirectTo }) => {
         userType: storedDomain,
       });
 
-      console.log("This is Fronted Recived Response:", res);
+      // console.log("This is Fronted Recived Response:", res);
 
       if (res?.data?.accessToken) {
         localStorage.setItem("accessToken", res.data.accessToken);
         localStorage.removeItem("domain");
 
-        console.log("our Token:", res.data.accessToken);
+        // console.log("our Token:", res.data.accessToken);
 
         // ✅ Update global user context
         if (res.data.user) {
           updateUser(res.data.user);
         }
 
-        console.log("Our Fronted router: ", redirectTo);
+        // console.log("Our Fronted router: ", redirectTo);
 
         navigate(redirectTo || `/${domain.toLowerCase()}/home`);
       } else {

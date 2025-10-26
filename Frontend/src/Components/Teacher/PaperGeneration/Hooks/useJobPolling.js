@@ -67,7 +67,6 @@ export default function useJobPolling(
 
       if (jobStatus === "completed" || jobStatus === "complete") {
         const url = API_PATHS.DOWNLOAD.PAPER(jobId);
-        console.log("This is our Frontend Url: ", url);
 
         const exists = await verifyPdfExists(url);
 

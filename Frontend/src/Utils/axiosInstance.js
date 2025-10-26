@@ -26,14 +26,7 @@ axiosInstance.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-    if (process.env.NODE_ENV === "development") {
-      console.log(
-        `[Axios Request] ${config.method?.toUpperCase()} ${config.url}`,
-        token ? "→ Auth header attached" : "→ No token found"
-      );
-    }
     
-
     return config;
   },
   (error) =>{
@@ -132,12 +125,12 @@ axiosInstance.interceptors.response.use(
     if (error.response) {
       const { status, data } = error.response;
 
-      if (process.env.NODE_ENV === "development") {
-        console.groupCollapsed(`Axios Error (${status})`);
-        console.error("Message:", data?.message || "No message provided");
-        console.error("Details:", data);
-        console.groupEnd();
-      }
+      // if (process.env.NODE_ENV === "development") {
+      //   console.groupCollapsed(`Axios Error (${status})`);
+      //   console.error("Message:", data?.message || "No message provided");
+      //   console.error("Details:", data);
+      //   console.groupEnd();
+      // }
 
       switch (status) {
         case 403:
