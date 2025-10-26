@@ -28,6 +28,8 @@ const path = require("path");
 
 dotenv.config();
 
+process.env.NODE_ENV = process.env.NODE_ENV || "production";
+
 const app = express();
 const port = process.env.PORT || 8000;
 
