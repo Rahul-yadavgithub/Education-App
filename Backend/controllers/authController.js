@@ -60,11 +60,13 @@ const login = async (req, res) => {
 
     const { accessToken, refreshToken } = generateTokens({ id: user._id, userType });
 
+    const isProduction = (process.env.NODE_ENV || "development") === "production";
+
     return res
       .cookie("refreshToken", refreshToken, {
         httpOnly: true,
-        secure: (process.env.NODE_ENV || "development") === "production",
-        sameSite: "Strict",
+        secure: isProduction,
+        sameSite: isProduction ? "None" : "Lax", // Use None in production for cross-origin
         maxAge: 7 * 24 * 60 * 60 * 1000,
       })
       .json({
@@ -151,10 +153,12 @@ const logout = async (req, res) => {
   try {
     const refreshToken = req.cookies?.refreshToken;
 
+    const isProduction = (process.env.NODE_ENV || "development") === "production";
+
     const cookieOptions = {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "Strict",
+     httpOnly: true,
+    secure: isProduction,
+    sameSite: isProduction ? "None" : "Lax",
     };
 
     res.clearCookie("accessToken", cookieOptions);
