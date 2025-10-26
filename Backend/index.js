@@ -28,27 +28,30 @@ const path = require("path");
 
 dotenv.config();
 
-process.env.NODE_ENV = process.env.NODE_ENV || "production";
+const NODE_ENV = process.env.NODE_ENV || "production";
+const PORT = process.env.PORT || 8000;
+const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
+
+const isProduction = NODE_ENV === "production";
+
+
 
 const app = express();
-const port = process.env.PORT || 8000;
+
 
 // Connect to database
 connectDB();
 
-// Middleware
-const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
-
 app.use(
   cors({
-    origin: FRONTEND_URL,
-    credentials: true,
+    origin: FRONTEND_URL, // Dynamic frontend URL
+    credentials: true, // Needed for cookies
   })
 );
 
 
 app.use(helmet());
-app.use(morgan("dev"));
+app.use(morgan(isProduction ? "combined" : "dev"));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser()); // 🔹 Important for isAuth to read token
